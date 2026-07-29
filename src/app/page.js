@@ -283,25 +283,43 @@ export default function Home() {
           }
         };
 
-        mediaRecorder.start(2500);
+        mediaRecorder.onstop = () => {
+          if (recognitionRef.current === mediaRecorder) {
+            try { mediaRecorder.start(); } catch(e) {}
+          }
+        };
+
+        try { mediaRecorder.start(); } catch(e) {}
         recognitionRef.current = mediaRecorder;
+        
+        // Use an interval to stop and flush the recorder every 2500ms so it generates valid WebM headers
+        const intervalId = setInterval(() => {
+          if (recognitionRef.current === mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+          }
+        }, 2500);
+        mediaRecorder.intervalId = intervalId;
+        
         console.log("Audio chunk recording started (Groq Whisper)");
       } catch (err) {
         console.error("Failed to start MediaRecorder", err);
       }
     } else {
       if (recognitionRef.current) {
+        clearInterval(recognitionRef.current.intervalId);
         try { recognitionRef.current.stop(); } catch(e){}
         recognitionRef.current = null;
       }
     }
-
   }, [inCall, micOn, roomId, userName, isAdmin]);
 
   // Admin transcribes everyone else's audio since candidates don't have API keys
   useEffect(() => {
     if (!inCall || !isAdmin) {
-      Object.values(peerRecordersRef.current).forEach(r => { try { r.stop(); } catch(e){} });
+      Object.values(peerRecordersRef.current).forEach(r => { 
+        clearInterval(r.intervalId);
+        try { r.stop(); } catch(e){} 
+      });
       peerRecordersRef.current = {};
       return;
     }
@@ -358,12 +376,27 @@ export default function Home() {
             }
           };
 
-          mediaRecorder.start(2500);
+          mediaRecorder.onstop = () => {
+            if (peerRecordersRef.current[peerId] === mediaRecorder) {
+              try { mediaRecorder.start(); } catch(e) {}
+            }
+          };
+
+          try { mediaRecorder.start(); } catch(e) {}
           peerRecordersRef.current[peerId] = mediaRecorder;
+          
+          const intervalId = setInterval(() => {
+            if (peerRecordersRef.current[peerId] === mediaRecorder && mediaRecorder.state === 'recording') {
+              mediaRecorder.stop();
+            }
+          }, 2500);
+          mediaRecorder.intervalId = intervalId;
+          
         } catch (err) {
           console.error("Failed to start peer MediaRecorder", err);
         }
       } else if ((!peer.stream || !peer.micOn) && peerRecordersRef.current[peerId]) {
+        clearInterval(peerRecordersRef.current[peerId].intervalId);
         try { peerRecordersRef.current[peerId].stop(); } catch(e){}
         delete peerRecordersRef.current[peerId];
       }
@@ -371,6 +404,7 @@ export default function Home() {
 
     Object.keys(peerRecordersRef.current).forEach(peerId => {
       if (!peers[peerId]) {
+        clearInterval(peerRecordersRef.current[peerId].intervalId);
         try { peerRecordersRef.current[peerId].stop(); } catch(e){}
         delete peerRecordersRef.current[peerId];
       }
