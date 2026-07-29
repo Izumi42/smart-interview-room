@@ -6,7 +6,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy } from 'lucide-react';
+import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText } from 'lucide-react';
 
 export default function Home() {
   const [inCall, setInCall] = useState(false);
@@ -24,6 +24,7 @@ export default function Home() {
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [liveTranscriptOpen, setLiveTranscriptOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [transcripts, setTranscripts] = useState([]);
   const [aiQuestions, setAiQuestions] = useState('');
@@ -216,6 +217,8 @@ export default function Home() {
           if (event.data.size > 0) {
             const formData = new FormData();
             formData.append('file', event.data, 'chunk.webm');
+            formData.append('apiKey', localStorage.getItem('meet_api_key') || '');
+            formData.append('agent', localStorage.getItem('meet_ai_model') || 'groq');
             
             try {
               const res = await fetch('/api/transcribe', {
@@ -827,6 +830,87 @@ export default function Home() {
         </>
       ) : (
         <div className="call-layout">
+          {inCall && isAdmin && (
+            <div style={{
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              {!liveTranscriptOpen && (
+                <button 
+                  onClick={() => setLiveTranscriptOpen(true)}
+                  style={{
+                    background: 'var(--gm-surface)',
+                    color: 'var(--gm-text)',
+                    border: '1px solid var(--gm-border)',
+                    borderLeft: 'none',
+                    borderRadius: '0 8px 8px 0',
+                    padding: '16px 8px',
+                    cursor: 'pointer',
+                    boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <FileText size={20} color="var(--gm-primary)" />
+                  <span style={{writingMode: 'vertical-rl', fontSize: '13px', fontWeight: 500, letterSpacing: '1px'}}>LIVE TRANSCRIPTS</span>
+                </button>
+              )}
+              
+              {liveTranscriptOpen && (
+                <div style={{
+                  width: '320px',
+                  height: '80vh',
+                  background: 'var(--gm-surface)',
+                  borderRight: '1px solid var(--gm-border)',
+                  boxShadow: '4px 0 16px rgba(0,0,0,0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: '0 12px 12px 0',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    padding: '16px',
+                    borderBottom: '1px solid var(--gm-border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'white'
+                  }}>
+                    <h3 style={{margin: 0, fontSize: '15px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gm-text)'}}>
+                      <FileText size={18} color="var(--gm-primary)" />
+                      Live Transcripts
+                    </h3>
+                    <button onClick={() => setLiveTranscriptOpen(false)} style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gm-text-muted)', padding: '4px'}}>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <div style={{flex: 1, overflowY: 'auto', padding: '16px', background: '#f8f9fa', display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                    {transcripts.length === 0 ? (
+                      <p style={{fontSize: '13px', color: 'var(--gm-text-muted)', textAlign: 'center', marginTop: '20px', fontStyle: 'italic'}}>No conversation detected yet.</p>
+                    ) : (
+                      transcripts.map((t, i) => (
+                        <div key={i} style={{background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e9ecef', boxShadow: '0 1px 2px rgba(0,0,0,0.02)'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center'}}>
+                            <span style={{fontSize: '12px', fontWeight: 600, color: t.senderName.includes('(Interviewer)') ? 'var(--gm-primary)' : '#0f9d58'}}>{t.senderName}</span>
+                            <span style={{fontSize: '11px', color: 'var(--gm-text-muted)'}}>{t.timestamp}</span>
+                          </div>
+                          <p style={{margin: 0, fontSize: '14px', color: 'var(--gm-text)', lineHeight: '1.5'}}>{t.text}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div className="call-main">
             <div className="video-area">
               <div className="video-grid" style={{ gridTemplateColumns: `repeat(${gridColumns}, 1fr)` }}>
