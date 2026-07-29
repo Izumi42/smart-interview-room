@@ -830,12 +830,15 @@ export default function Home() {
       if (data.questions) {
         setAiQuestions(data.questions);
       } else {
-        console.error("AI Generation Failed:", data.error);
-        if (!isAuto) alert(data.error || "Could not generate questions.");
+        const errorMsg = data.error?.message || data.error || "Could not generate questions.";
+        console.error("AI Generation Failed:", errorMsg);
+        if (!isAuto) alert(errorMsg);
+        setAiQuestions(`[API Error]: ${errorMsg}\n\nPlease check your LLM API Key in the settings.`);
       }
     } catch (err) {
       console.error(err);
       if (!isAuto) alert("Error calling AI API");
+      setAiQuestions(`[Network Error]: Could not reach the AI endpoint.\n\nCheck your internet connection or API keys.`);
     } finally {
       setIsGenerating(false);
       isGeneratingRef.current = false;
