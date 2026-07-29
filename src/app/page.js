@@ -59,6 +59,10 @@ export default function Home() {
   const isGeneratingRef = useRef(false);
   const audioCtxRef = useRef(null);
 
+  // VAD (Voice Activity Detection) refs to act as a noise gate for transcription
+  const localHasSpokenRef = useRef(false);
+  const peerHasSpokenRef = useRef({});
+
   useEffect(() => {
     userNameRef.current = userName;
   }, [userName]);
@@ -236,7 +240,9 @@ export default function Home() {
         const mediaRecorder = new MediaRecorder(audioStream, options);
         
         mediaRecorder.ondataavailable = async (event) => {
-          if (event.data.size > 0) {
+          if (event.data.size > 0 && localHasSpokenRef.current) {
+            localHasSpokenRef.current = false; // Reset for next chunk
+            
             const formData = new FormData();
             formData.append('file', event.data, 'chunk.webm');
             formData.append('apiKey', localStorage.getItem('meet_api_key') || '');
@@ -272,6 +278,8 @@ export default function Home() {
               setTranscriptError(err.message);
               console.error("Transcription chunk failed", err);
             }
+          } else {
+            localHasSpokenRef.current = false; // Reset if silent
           }
         };
 
@@ -317,7 +325,9 @@ export default function Home() {
           const mediaRecorder = new MediaRecorder(audioStream, options);
           
           mediaRecorder.ondataavailable = async (event) => {
-            if (event.data.size > 0) {
+            if (event.data.size > 0 && peerHasSpokenRef.current[peerId]) {
+              peerHasSpokenRef.current[peerId] = false; // Reset for next chunk
+              
               const formData = new FormData();
               formData.append('file', event.data, 'chunk.webm');
               formData.append('apiKey', apiKeyStr);
@@ -343,6 +353,8 @@ export default function Home() {
               } catch (err) {
                 console.error("Peer transcription failed", err);
               }
+            } else {
+              peerHasSpokenRef.current[peerId] = false; // Reset if silent
             }
           };
 
@@ -427,6 +439,10 @@ export default function Home() {
             const average = sum / dataArray.length;
             const isSpeakingNow = average > 15;
             
+            if (isSpeakingNow) {
+              localHasSpokenRef.current = true;
+            }
+            
             if (isSpeakingNow !== currentlySpeaking) {
               currentlySpeaking = isSpeakingNow;
               setLocalIsSpeaking(isSpeakingNow);
@@ -496,6 +512,10 @@ export default function Home() {
             for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
             const average = sum / dataArray.length;
             const isSpeakingNow = average > 15;
+            
+            if (isSpeakingNow) {
+              peerHasSpokenRef.current[targetUserId] = true;
+            }
             
             if (isSpeakingNow !== currentlySpeaking) {
               currentlySpeaking = isSpeakingNow;
