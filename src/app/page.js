@@ -715,7 +715,7 @@ export default function Home() {
     <div className="app-container">
       {!nameSubmitted && (
         <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-          <div style={{background: 'white', padding: '32px', borderRadius: '12px', boxShadow: '0 16px 48px rgba(0,0,0,0.2)', textAlign: 'center', maxWidth: '350px', width: '90%'}}>
+          <div style={{background: 'white', padding: '32px', borderRadius: '12px', boxShadow: '0 16px 48px rgba(0,0,0,0.2)', textAlign: 'center', maxWidth: '420px', width: '90%'}}>
             <h2 style={{marginBottom: '8px', fontSize: '20px', fontWeight: 500, color: 'var(--gm-text)'}}>Welcome</h2>
             <p style={{color: 'var(--gm-text-muted)', marginBottom: '24px', fontSize: '15px'}}>Please enter your name to join</p>
             <form onSubmit={(e) => { 
