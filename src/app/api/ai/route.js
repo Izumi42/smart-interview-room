@@ -47,7 +47,7 @@ export async function POST(req) {
           }
           return NextResponse.json({ questions: text.trim() });
         }
-        return NextResponse.json({ error: 'Groq API Error' }, { status: 500 });
+        return NextResponse.json({ error: data.error?.message || 'Groq API Error: ' + JSON.stringify(data) }, { status: 500 });
       } 
       
       else if (targetAgent === 'openai') {
@@ -72,7 +72,7 @@ export async function POST(req) {
           }
           return NextResponse.json({ questions: text.trim() });
         }
-        return NextResponse.json({ error: 'OpenAI API Error' }, { status: 500 });
+        return NextResponse.json({ error: data.error?.message || 'OpenAI API Error: ' + JSON.stringify(data) }, { status: 500 });
       }
 
       else if (targetAgent === 'gemini') {
@@ -96,7 +96,7 @@ export async function POST(req) {
           }
           return NextResponse.json({ questions: text.trim() });
         }
-        return NextResponse.json({ error: 'Gemini API Error' }, { status: 500 });
+        return NextResponse.json({ error: data.error?.message || 'Gemini API Error: ' + JSON.stringify(data) }, { status: 500 });
       }
 
       else if (targetAgent === 'anthropic') {
@@ -123,18 +123,18 @@ export async function POST(req) {
           }
           return NextResponse.json({ questions: text.trim() });
         }
-        return NextResponse.json({ error: 'Anthropic API Error' }, { status: 500 });
+        return NextResponse.json({ error: data.error?.message || 'Anthropic API Error: ' + JSON.stringify(data) }, { status: 500 });
       }
 
       return NextResponse.json({ error: 'Unknown AI Agent' }, { status: 400 });
 
     } catch (apiError) {
       console.error(`AI API Error (${targetAgent}):`, apiError);
-      return NextResponse.json({ error: `Failed to call ${targetAgent} API`, answeredIds: [] }, { status: 500 });
+      return NextResponse.json({ error: `Failed to call ${targetAgent} API: ${apiError.message}` }, { status: 500 });
     }
 
   } catch (error) {
     console.error("Internal Server Error:", error);
-    return NextResponse.json({ error: 'Internal server error', answeredIds: [] }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error: ' + error.message }, { status: 500 });
   }
 }
