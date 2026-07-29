@@ -37,7 +37,6 @@ export default function Home() {
   const [aiQuestions, setAiQuestions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [localSocketId, setLocalSocketId] = useState('');
-  const [localIsSpeaking, setLocalIsSpeaking] = useState(false);
   const [agendaItems, setAgendaItems] = useState([]);
   const [newAgendaItem, setNewAgendaItem] = useState('');
   const [chatInput, setChatInput] = useState('');
@@ -474,7 +473,12 @@ export default function Home() {
             
             if (isSpeakingNow !== currentlySpeaking) {
               currentlySpeaking = isSpeakingNow;
-              setLocalIsSpeaking(isSpeakingNow);
+              
+              const el = document.getElementById('local-video-wrapper');
+              if (el) {
+                el.style.border = isSpeakingNow ? '3px solid #1a73e8' : '3px solid transparent';
+                el.style.boxShadow = isSpeakingNow ? '0 0 15px rgba(26, 115, 232, 0.6)' : 'none';
+              }
               
               if (!isSpeakingNow) {
                  localSilenceTimeoutRef.current = setTimeout(() => {
@@ -568,10 +572,12 @@ export default function Home() {
             
             if (isSpeakingNow !== currentlySpeaking) {
               currentlySpeaking = isSpeakingNow;
-              setPeers(prev => prev[targetUserId] ? {
-                ...prev,
-                [targetUserId]: { ...prev[targetUserId], isSpeaking: isSpeakingNow }
-              } : prev);
+              
+              const el = document.getElementById(`peer-video-wrapper-${targetUserId}`);
+              if (el) {
+                el.style.border = isSpeakingNow ? '3px solid #1a73e8' : '3px solid transparent';
+                el.style.boxShadow = isSpeakingNow ? '0 0 15px rgba(26, 115, 232, 0.6)' : 'none';
+              }
               
               if (!isSpeakingNow) {
                  peerSilenceTimeoutRef.current[targetUserId] = setTimeout(() => {
@@ -1212,9 +1218,9 @@ export default function Home() {
             )}
             <div className="video-area">
               <div className="video-grid" style={{ gridTemplateColumns: `repeat(${gridColumns}, 1fr)` }}>
-                <div className="video-wrapper" style={{ 
-                  border: (localIsSpeaking && micOn) ? '3px solid #1a73e8' : '3px solid transparent', 
-                  boxShadow: (localIsSpeaking && micOn) ? '0 0 15px rgba(26, 115, 232, 0.6)' : 'none',
+                <div id="local-video-wrapper" className="video-wrapper" style={{ 
+                  border: '3px solid transparent', 
+                  boxShadow: 'none',
                   transition: 'border 0.2s, box-shadow 0.2s',
                   boxSizing: 'border-box'
                 }}>
@@ -1225,9 +1231,9 @@ export default function Home() {
                 {Object.entries(peers).map(([id, peer]) => {
                   const displayName = peer.name || id.substring(0, 8);
                   return (
-                  <div key={id} className="video-wrapper" style={{ 
-                    border: (peer.isSpeaking && peer.micOn) ? '3px solid #1a73e8' : '3px solid transparent', 
-                    boxShadow: (peer.isSpeaking && peer.micOn) ? '0 0 15px rgba(26, 115, 232, 0.6)' : 'none',
+                  <div key={id} id={`peer-video-wrapper-${id}`} className="video-wrapper" style={{ 
+                    border: '3px solid transparent', 
+                    boxShadow: 'none',
                     transition: 'border 0.2s, box-shadow 0.2s',
                     boxSizing: 'border-box'
                   }}>
