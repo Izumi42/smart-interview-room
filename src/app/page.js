@@ -212,7 +212,13 @@ export default function Home() {
       if (recognitionRef.current) return; // Reuse the ref for MediaRecorder
 
       try {
-        const mediaRecorder = new MediaRecorder(localStreamRef.current, { mimeType: 'audio/webm' });
+        const audioStream = new MediaStream(localStreamRef.current.getAudioTracks());
+        const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+          ? { mimeType: 'audio/webm;codecs=opus' } 
+          : MediaRecorder.isTypeSupported('audio/webm') 
+            ? { mimeType: 'audio/webm' } 
+            : {};
+        const mediaRecorder = new MediaRecorder(audioStream, options);
         
         mediaRecorder.ondataavailable = async (event) => {
           if (event.data.size > 0) {
