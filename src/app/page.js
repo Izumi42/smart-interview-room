@@ -575,7 +575,7 @@ export default function Home() {
       if (data.questions) {
         setAiQuestions(data.questions);
       } else {
-        if (!isAuto) alert("Could not generate questions.");
+        if (!isAuto) alert(data.error || "Could not generate questions.");
       }
     } catch (err) {
       console.error(err);
@@ -615,6 +615,8 @@ export default function Home() {
              socketRef.current.emit('toggle-agenda', { ...item, done: true, roomId });
           }
         });
+      } else if (data.error && !isAuto) {
+        console.error("Agenda evaluation error:", data.error);
       }
     } catch (err) {
       console.error("Error evaluating agenda:", err);
