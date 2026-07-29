@@ -2,39 +2,49 @@
 
 🔴 **Live Demo:** [https://smart-interview-room.onrender.com/](https://smart-interview-room.onrender.com/)
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+A modern, highly reliable video conferencing and interview platform with an integrated AI assistant. Built to seamlessly connect, collaborate, and celebrate from anywhere.
 
-## Getting Started
+## ✨ Features
 
-First, run the development server:
+- **Real-Time Video & Audio:** Fast and secure WebRTC-based communication.
+- **AI Interview Assistant:** Get real-time suggested questions and conversational analysis based on the live transcript.
+- **In-Call Chat:** Send and receive messages instantly during the call.
+- **Meeting Agenda & Scorecards:** Keep track of talking points and check them off as you go.
+- **Screen Sharing:** Share your screen with other participants effortlessly.
+- **Hand Raising & Reactions:** Non-verbally signal when you want to speak.
+- **Meeting Details & Link Sharing:** Easily copy and share room links to invite participants.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🛠️ Technologies Used
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Framework:** [Next.js](https://nextjs.org)
+- **Real-Time Communication:** WebSockets ([Socket.io](https://socket.io/)) and WebRTC
+- **Styling:** Custom CSS (Modern, Google Meet-inspired UI)
+- **Icons:** [Lucide React](https://lucide.dev/)
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 🚀 Getting Started Locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Izumi42/smart-interview-room.git
+   cd smart-interview-room
+   ```
 
-## Learn More
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🌍 Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project uses a custom Node.js server (`server.js`) to handle WebSockets, so it is best deployed on platforms like **Render**, Railway, or a VPS rather than standard serverless platforms like Vercel.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**To deploy on Render (Free & Automated):**
+1. Create a new **Blueprint** on Render.com.
+2. Connect this GitHub repository.
+3. Render will automatically read the included `render.yaml` file and deploy the app!
