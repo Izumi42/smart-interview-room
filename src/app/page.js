@@ -472,23 +472,8 @@ export default function Home() {
               }
               
               if (!isSpeakingNow) {
-                 localSilenceTimeoutRef.current = setTimeout(() => {
-                    if (recognitionRef.current && recognitionRef.current.state === 'recording') {
-                       recognitionRef.current.stop();
-                    }
-                 }, 1200); // Wait 1.2s of silence to avoid splitting sentences
                  clearTimeout(localMaxRecordTimeoutRef.current);
                  localMaxRecordTimeoutRef.current = null;
-              } else {
-                 clearTimeout(localSilenceTimeoutRef.current);
-                 if (!localMaxRecordTimeoutRef.current) {
-                    localMaxRecordTimeoutRef.current = setTimeout(() => {
-                       if (recognitionRef.current && recognitionRef.current.state === 'recording') {
-                          recognitionRef.current.stop();
-                       }
-                       localMaxRecordTimeoutRef.current = null;
-                    }, 6000); // Force flush after 6s max
-                 }
               }
             }
             setTimeout(checkLevel, 150);
@@ -921,6 +906,9 @@ export default function Home() {
     if (!cleanText || !socketRef.current) return;
     const id = Math.random().toString(36).substring(2, 10);
     socketRef.current.emit('add-agenda', { id, roomId, text: cleanText, done: false });
+    
+    // Remove it from the suggestions list so it disappears
+    setAiQuestions(prev => prev.split('\n').filter(line => !line.includes(cleanText)).join('\n'));
   };
 
   const removeAgendaItem = (id) => {
