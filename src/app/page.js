@@ -252,7 +252,7 @@ export default function Home() {
         const audioStream = new MediaStream(localStreamRef.current.getAudioTracks());
         const dgKey = localStorage.getItem('meet_deepgram_key');
         if (dgKey) {
-          const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300', ['token', dgKey]);
+          const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300&keepalive=true', ['token', dgKey]);
           deepgramSocketsRef.current['local'] = socket;
 
           socket.onopen = () => {
@@ -334,7 +334,7 @@ export default function Home() {
 
           const dgKey = localStorage.getItem('meet_deepgram_key');
           if (dgKey) {
-            const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300', ['token', dgKey]);
+            const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300&keepalive=true', ['token', dgKey]);
             deepgramSocketsRef.current[peerId] = socket;
 
             socket.onopen = () => {
