@@ -770,18 +770,20 @@ export default function Home() {
               <span style={{color: 'var(--gm-text-muted)'}}>{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
               <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px'}}>
                 <div style={{display: 'flex', alignItems: 'center', gap: '12px', background: '#f1f3f4', padding: '4px 12px 4px 4px', borderRadius: '24px'}}>
-                  <div className="video-off-avatar" style={{width: '28px', height: '28px', fontSize: '13px', background: 'var(--gm-primary)', color: 'white'}}>{userName ? userName.charAt(0).toUpperCase() : ''}</div>
-                  <button onClick={() => setNameSubmitted(false)} style={{background: 'transparent', border: 'none', padding: 0, margin: 0, fontSize: '14px', fontWeight: 500, color: 'var(--gm-text)', cursor: 'pointer'}}>
-                    {userName} <span style={{color: 'var(--gm-primary)', fontSize: '12px', marginLeft: '4px'}}>(Change)</span>
+                  <div className="video-off-avatar" style={{width: '32px', height: '32px', fontSize: '14px', background: 'var(--gm-primary)', color: 'white'}}>{userName ? userName.charAt(0).toUpperCase() : ''}</div>
+                  <button onClick={() => setNameSubmitted(false)} style={{background: 'transparent', border: 'none', padding: 0, margin: 0, fontSize: '15px', fontWeight: 500, color: 'var(--gm-text)', cursor: 'pointer'}}>
+                    {userName} <span style={{color: 'var(--gm-primary)', fontSize: '13px', marginLeft: '6px'}}>(Change)</span>
                   </button>
                 </div>
                 
                 {nameSubmitted && (
                   <div onClick={() => setShowAiSettings(true)} style={{display: 'flex', alignItems: 'center', gap: '12px', background: '#f1f3f4', padding: '4px 12px 4px 4px', borderRadius: '24px', cursor: 'pointer', transition: 'background 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.background = '#e8eaed'} onMouseLeave={(e) => e.currentTarget.style.background = '#f1f3f4'}>
-                    <div style={{width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gm-primary)', color: 'white', borderRadius: '50%'}}>
-                      <Bot size={16} />
+                    <div className="video-off-avatar" style={{width: '32px', height: '32px', background: 'var(--gm-primary)', color: 'white'}}>
+                      <Bot size={18} />
                     </div>
-                    <span style={{fontSize: '14px', fontWeight: 500, color: 'var(--gm-text)', marginRight: '4px'}}>AI Settings</span>
+                    <div style={{background: 'transparent', border: 'none', padding: 0, margin: 0, fontSize: '15px', fontWeight: 500, color: 'var(--gm-text)', paddingRight: '4px'}}>
+                      AI Settings
+                    </div>
                   </div>
                 )}
               </div>
