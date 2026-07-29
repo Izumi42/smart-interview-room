@@ -6,7 +6,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText } from 'lucide-react';
+import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText, VolumeX, Volume2 } from 'lucide-react';
 
 export default function Home() {
   const [inCall, setInCall] = useState(false);
@@ -29,6 +29,7 @@ export default function Home() {
   const [transcriptError, setTranscriptError] = useState('');
   const [messages, setMessages] = useState([]);
   const [transcripts, setTranscripts] = useState([]);
+  const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
   const [aiQuestions, setAiQuestions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [localSocketId, setLocalSocketId] = useState('');
@@ -378,7 +379,14 @@ export default function Home() {
     
     setIsLoading(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: { 
+          noiseSuppression: true, 
+          echoCancellation: true, 
+          autoGainControl: true 
+        } 
+      });
       
       // Wait for a smooth loading animation delay
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -585,6 +593,25 @@ export default function Home() {
     });
     if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
     setScreenSharing(false);
+  };
+
+  const toggleNoiseSuppression = async () => {
+    if (localStreamRef.current) {
+      const audioTrack = localStreamRef.current.getAudioTracks()[0];
+      if (audioTrack) {
+        try {
+          const currentConstraints = audioTrack.getConstraints();
+          const nextState = !noiseSuppressionEnabled;
+          await audioTrack.applyConstraints({
+            ...currentConstraints,
+            noiseSuppression: nextState
+          });
+          setNoiseSuppressionEnabled(nextState);
+        } catch (e) {
+          console.error("Failed to toggle noise suppression", e);
+        }
+      }
+    }
   };
 
   const toggleHand = () => {
@@ -1273,6 +1300,9 @@ export default function Home() {
             <div className="bar-center">
               <button className={`gm-icon-btn ${!micOn ? 'danger' : ''}`} onClick={() => toggleMedia('audio')}>
                 {micOn ? <Mic size={20} /> : <MicOff size={20} />}
+              </button>
+              <button className={`gm-icon-btn ${!noiseSuppressionEnabled ? 'danger' : ''}`} onClick={toggleNoiseSuppression} title="Toggle Noise Suppression (Background Noise)">
+                {noiseSuppressionEnabled ? <VolumeX size={20} /> : <Volume2 size={20} />}
               </button>
               <button className={`gm-icon-btn ${!videoOn ? 'danger' : ''}`} onClick={() => toggleMedia('video')}>
                 {videoOn ? <VideoIcon size={20} /> : <VideoOff size={20} />}
