@@ -437,7 +437,7 @@ export default function Home() {
             let sum = 0;
             for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
             const average = sum / dataArray.length;
-            const isSpeakingNow = average > 15;
+            const isSpeakingNow = average > 35; // Tuned for loud office environments
             
             if (isSpeakingNow) {
               localHasSpokenRef.current = true;
@@ -511,7 +511,7 @@ export default function Home() {
             let sum = 0;
             for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
             const average = sum / dataArray.length;
-            const isSpeakingNow = average > 15;
+            const isSpeakingNow = average > 35; // Tuned for loud office environments
             
             if (isSpeakingNow) {
               peerHasSpokenRef.current[targetUserId] = true;
