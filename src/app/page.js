@@ -19,6 +19,7 @@ export default function Home() {
   const [apiKey, setApiKey] = useState('');
   const [aiModel, setAiModel] = useState('groq');
   const [interviewContext, setInterviewContext] = useState('');
+  const [deepgramApiKey, setDeepgramApiKey] = useState('');
   const [nameSubmitted, setNameSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -51,6 +52,7 @@ export default function Home() {
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const peerRecordersRef = useRef({});
+  const deepgramSocketsRef = useRef({});
   const transcriptsRef = useRef([]);
   const agendaItemsRef = useRef([]);
   const sessionIdRef = useRef('');
@@ -106,6 +108,11 @@ export default function Home() {
     const savedContext = localStorage.getItem('meet_interview_context');
     if (savedContext) {
       setInterviewContext(savedContext);
+    }
+    
+    const savedDeepgramKey = localStorage.getItem('meet_deepgram_key');
+    if (savedDeepgramKey) {
+      setDeepgramApiKey(savedDeepgramKey);
     }
     
     let sid = localStorage.getItem('meet_session_id');
@@ -243,68 +250,48 @@ export default function Home() {
 
       try {
         const audioStream = new MediaStream(localStreamRef.current.getAudioTracks());
-        const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-          ? { mimeType: 'audio/webm;codecs=opus' } 
-          : MediaRecorder.isTypeSupported('audio/webm') 
-            ? { mimeType: 'audio/webm' } 
-            : {};
-        const mediaRecorder = new MediaRecorder(audioStream, options);
-        
-        mediaRecorder.ondataavailable = async (event) => {
-          if (event.data.size > 0 && localHasSpokenRef.current) {
-            localHasSpokenRef.current = false; // Reset for next chunk
+        const dgKey = localStorage.getItem('meet_deepgram_key');
+        if (dgKey) {
+          const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=false', ['token', dgKey]);
+          deepgramSocketsRef.current['local'] = socket;
+
+          socket.onopen = () => {
+            const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : {};
+            const mediaRecorder = new MediaRecorder(audioStream, options);
+            recognitionRef.current = mediaRecorder;
             
-            const formData = new FormData();
-            formData.append('file', event.data, 'chunk.webm');
-            formData.append('apiKey', localStorage.getItem('meet_api_key') || '');
-            formData.append('agent', localStorage.getItem('meet_ai_model') || 'groq');
-            formData.append('context', localStorage.getItem('meet_interview_context') || '');
-            
+            mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0 && socket.readyState === 1) socket.send(e.data);
+            };
+            mediaRecorder.start(250);
+            console.log("Deepgram Local WebSocket Connected & Streaming");
+          };
+
+          socket.onmessage = (message) => {
             try {
-              const res = await fetch('/api/transcribe', {
-                method: 'POST',
-                body: formData
-              });
-              
-              if (res.ok) {
-                setTranscriptError('');
-                const data = await res.json();
-                if (data.text && data.text.trim()) {
+              const received = JSON.parse(message.data);
+              if (received.channel && received.channel.alternatives && received.channel.alternatives[0]) {
+                const transcriptStr = received.channel.alternatives[0].transcript;
+                if (transcriptStr && received.is_final) {
                   const roleTag = isAdmin ? '(Interviewer)' : '(Candidate)';
-                  const currentUtteranceId = Math.random().toString(36).substr(2, 9);
                   socketRef.current.emit('transcript', { 
-                    id: currentUtteranceId, 
+                    id: Math.random().toString(36).substr(2, 9), 
                     roomId, 
-                    senderName: `${userName} ${roleTag}`, 
-                    text: data.text.trim(), 
+                    senderName: `${userNameRef.current} ${roleTag}`, 
+                    text: transcriptStr.trim(), 
                     isFinal: true, 
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
                     unix: Date.now() 
                   });
                 }
-              } else {
-                const errData = await res.json();
-                setTranscriptError(errData.error || 'API Error');
               }
-            } catch (err) {
-              setTranscriptError(err.message);
-              console.error("Transcription chunk failed", err);
-            }
-          } else {
-            localHasSpokenRef.current = false; // Reset if silent
-          }
-        };
-
-        mediaRecorder.onstop = () => {
-          if (recognitionRef.current === mediaRecorder) {
-            try { mediaRecorder.start(); } catch(e) {}
-          }
-        };
-
-        try { mediaRecorder.start(); } catch(e) {}
-        recognitionRef.current = mediaRecorder;
-        
-        console.log("Audio chunk recording started with Dynamic Silence Detection");
+            } catch(e) {}
+          };
+          
+          socket.onerror = (e) => console.error("Deepgram local error", e);
+        } else {
+          console.warn("Deepgram API Key not set. Local transcription is disabled.");
+        }
       } catch (err) {
         console.error("Failed to start MediaRecorder", err);
       }
@@ -312,6 +299,10 @@ export default function Home() {
       if (recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch(e){}
         recognitionRef.current = null;
+      }
+      if (deepgramSocketsRef.current['local']) {
+        try { deepgramSocketsRef.current['local'].close(); } catch(e){}
+        delete deepgramSocketsRef.current['local'];
       }
     }
   }, [inCall, micOn, roomId, userName, isAdmin]);
@@ -323,6 +314,11 @@ export default function Home() {
         try { r.stop(); } catch(e){} 
       });
       peerRecordersRef.current = {};
+      Object.values(deepgramSocketsRef.current).forEach(s => {
+        if (s !== deepgramSocketsRef.current['local']) {
+          try { s.close(); } catch(e){}
+        }
+      });
       return;
     }
 
@@ -336,57 +332,44 @@ export default function Home() {
           const audioStream = new MediaStream(peer.stream.getAudioTracks());
           if (audioStream.getAudioTracks().length === 0) return;
 
-          const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-            ? { mimeType: 'audio/webm;codecs=opus' } 
-            : MediaRecorder.isTypeSupported('audio/webm') 
-              ? { mimeType: 'audio/webm' } 
-              : {};
-          
-          const mediaRecorder = new MediaRecorder(audioStream, options);
-          
-          mediaRecorder.ondataavailable = async (event) => {
-            if (event.data.size > 0 && peerHasSpokenRef.current[peerId]) {
-              peerHasSpokenRef.current[peerId] = false; // Reset for next chunk
+          const dgKey = localStorage.getItem('meet_deepgram_key');
+          if (dgKey) {
+            const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=false', ['token', dgKey]);
+            deepgramSocketsRef.current[peerId] = socket;
+
+            socket.onopen = () => {
+              const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : {};
+              const mediaRecorder = new MediaRecorder(audioStream, options);
+              peerRecordersRef.current[peerId] = mediaRecorder;
               
-              const formData = new FormData();
-              formData.append('file', event.data, 'chunk.webm');
-              formData.append('apiKey', apiKeyStr);
-              formData.append('agent', aiModelStr);
-              formData.append('context', localStorage.getItem('meet_interview_context') || '');
-              
+              mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0 && socket.readyState === 1) socket.send(e.data);
+              };
+              mediaRecorder.start(250);
+              console.log("Deepgram Peer WebSocket Connected & Streaming");
+            };
+
+            socket.onmessage = (message) => {
               try {
-                const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
-                if (res.ok) {
-                  const data = await res.json();
-                  if (data.text && data.text.trim() && socketRef.current) {
+                const received = JSON.parse(message.data);
+                if (received.channel && received.channel.alternatives && received.channel.alternatives[0]) {
+                  const transcriptStr = received.channel.alternatives[0].transcript;
+                  if (transcriptStr && received.is_final) {
                     socketRef.current.emit('transcript', {
                       id: Math.random().toString(36).substr(2, 9),
                       roomId,
                       userId: peerId,
                       senderName: `${peer.name || 'Candidate'} (Candidate)`,
-                      text: data.text.trim(),
+                      text: transcriptStr.trim(),
                       isFinal: true,
                       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                       unix: Date.now()
                     });
                   }
                 }
-              } catch (err) {
-                console.error("Peer transcription failed", err);
-              }
-            } else {
-              peerHasSpokenRef.current[peerId] = false; // Reset if silent
-            }
-          };
-
-          mediaRecorder.onstop = () => {
-            if (peerRecordersRef.current[peerId] === mediaRecorder) {
-              try { mediaRecorder.start(); } catch(e) {}
-            }
-          };
-
-          try { mediaRecorder.start(); } catch(e) {}
-          peerRecordersRef.current[peerId] = mediaRecorder;
+              } catch(e) {}
+            };
+          }
           
         } catch (err) {
           console.error("Failed to start peer MediaRecorder", err);
@@ -394,6 +377,10 @@ export default function Home() {
       } else if ((!peer.stream || !peer.micOn) && peerRecordersRef.current[peerId]) {
         try { peerRecordersRef.current[peerId].stop(); } catch(e){}
         delete peerRecordersRef.current[peerId];
+        if (deepgramSocketsRef.current[peerId]) {
+          try { deepgramSocketsRef.current[peerId].close(); } catch(e){}
+          delete deepgramSocketsRef.current[peerId];
+        }
       }
     });
 
@@ -401,6 +388,10 @@ export default function Home() {
       if (!peers[peerId]) {
         try { peerRecordersRef.current[peerId].stop(); } catch(e){}
         delete peerRecordersRef.current[peerId];
+        if (deepgramSocketsRef.current[peerId]) {
+          try { deepgramSocketsRef.current[peerId].close(); } catch(e){}
+          delete deepgramSocketsRef.current[peerId];
+        }
       }
     });
   }, [peers, inCall, isAdmin]);
@@ -1068,8 +1059,8 @@ export default function Home() {
                   <option value="anthropic">Claude (Anthropic)</option>
                 </select>
 
-                <label style={{display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px'}}>API Key (Optional)</label>
-                <div className="input-wrapper" style={{marginBottom: '24px'}}>
+                <label style={{display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px'}}>LLM API Key (ChatGPT/Llama)</label>
+                <div className="input-wrapper" style={{marginBottom: '16px'}}>
                   <Keyboard size={18} className="input-icon" />
                   <input 
                     type="password" 
@@ -1082,6 +1073,22 @@ export default function Home() {
                     style={{width: '100%', paddingLeft: '40px', paddingRight: '12px'}}
                   />
                 </div>
+                
+                <label style={{display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px'}}>Deepgram API Key (Transcription)</label>
+                <div className="input-wrapper" style={{marginBottom: '24px'}}>
+                  <Keyboard size={18} className="input-icon" />
+                  <input 
+                    type="password" 
+                    placeholder="Enter Deepgram API Key" 
+                    value={deepgramApiKey} 
+                    onChange={(e) => {
+                      setDeepgramApiKey(e.target.value);
+                      localStorage.setItem('meet_deepgram_key', e.target.value);
+                    }} 
+                    style={{width: '100%', paddingLeft: '40px', paddingRight: '12px'}}
+                  />
+                </div>
+                
                 <label style={{display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px'}}>Interview Context / Keywords (Optional)</label>
                 <div className="input-wrapper" style={{marginBottom: '16px'}}>
                   <FileText size={18} className="input-icon" />
