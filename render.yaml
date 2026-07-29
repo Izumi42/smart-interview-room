@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: smart-interview-room
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
