@@ -6,7 +6,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText, VolumeX, Volume2 } from 'lucide-react';
+import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText, VolumeX, Volume2, ChevronUp } from 'lucide-react';
 
 export default function Home() {
   const [inCall, setInCall] = useState(false);
@@ -30,6 +30,9 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [transcripts, setTranscripts] = useState([]);
   const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
+  const [audioDevices, setAudioDevices] = useState([]);
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState('');
+  const [showAudioMenu, setShowAudioMenu] = useState(false);
   const [aiQuestions, setAiQuestions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [localSocketId, setLocalSocketId] = useState('');
@@ -387,6 +390,14 @@ export default function Home() {
           autoGainControl: true 
         } 
       });
+
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        const audioInputs = devices.filter(d => d.kind === 'audioinput');
+        setAudioDevices(audioInputs);
+        if (audioInputs.length > 0) {
+          setSelectedAudioDevice(audioInputs[0].deviceId);
+        }
+      }).catch(err => console.error("Could not enumerate devices", err));
       
       // Wait for a smooth loading animation delay
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -611,6 +622,38 @@ export default function Home() {
           console.error("Failed to toggle noise suppression", e);
         }
       }
+    }
+  };
+
+  const changeAudioDevice = async (deviceId) => {
+    if (!localStreamRef.current) return;
+    try {
+      const audioConstraints = {
+        deviceId: { exact: deviceId },
+        noiseSuppression: noiseSuppressionEnabled,
+        echoCancellation: true,
+        autoGainControl: true
+      };
+      
+      const newStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+      const newAudioTrack = newStream.getAudioTracks()[0];
+      
+      const oldAudioTrack = localStreamRef.current.getAudioTracks()[0];
+      if (oldAudioTrack) oldAudioTrack.stop();
+      
+      localStreamRef.current.removeTrack(oldAudioTrack);
+      localStreamRef.current.addTrack(newAudioTrack);
+      
+      Object.values(peerConnectionsRef.current).forEach(pc => {
+        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+        if (sender) sender.replaceTrack(newAudioTrack);
+      });
+      
+      setSelectedAudioDevice(deviceId);
+      setShowAudioMenu(false);
+      newAudioTrack.enabled = micOn;
+    } catch (err) {
+      console.error("Failed to change audio device", err);
     }
   };
 
@@ -1298,9 +1341,30 @@ export default function Home() {
             </div>
             
             <div className="bar-center">
-              <button className={`gm-icon-btn ${!micOn ? 'danger' : ''}`} onClick={() => toggleMedia('audio')}>
-                {micOn ? <Mic size={20} /> : <MicOff size={20} />}
-              </button>
+              <div style={{position: 'relative', display: 'flex', alignItems: 'center'}}>
+                <div style={{display: 'flex', background: !micOn ? '#ea4335' : '#3c4043', borderRadius: '24px', marginRight: '10px'}}>
+                  <button className="gm-icon-btn" style={{background: 'transparent', margin: 0, paddingRight: '8px', borderTopRightRadius: 0, borderBottomRightRadius: 0}} onClick={() => toggleMedia('audio')}>
+                    {micOn ? <Mic size={20} color={!micOn ? 'white' : 'var(--gm-text)'} /> : <MicOff size={20} color="white" />}
+                  </button>
+                  <button className="gm-icon-btn" style={{background: 'transparent', margin: 0, paddingLeft: '4px', paddingRight: '8px', borderTopLeftRadius: 0, borderBottomLeftRadius: 0}} onClick={() => setShowAudioMenu(!showAudioMenu)}>
+                    <ChevronUp size={16} color={!micOn ? 'white' : 'var(--gm-text)'} />
+                  </button>
+                </div>
+                
+                {showAudioMenu && (
+                  <div style={{position: 'absolute', bottom: '100%', left: 0, marginBottom: '8px', background: 'var(--gm-surface)', border: '1px solid var(--gm-border)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', padding: '8px 0', minWidth: '220px', zIndex: 100}}>
+                    <div style={{padding: '4px 16px', fontSize: '11px', fontWeight: 600, color: 'var(--gm-text-muted)', letterSpacing: '0.5px'}}>MICROPHONE</div>
+                    {audioDevices.length === 0 && <div style={{padding: '8px 16px', fontSize: '13px', color: 'var(--gm-text-muted)'}}>No devices found</div>}
+                    {audioDevices.map(device => (
+                      <div key={device.deviceId} onClick={() => changeAudioDevice(device.deviceId)} style={{padding: '8px 16px', fontSize: '13px', cursor: 'pointer', background: selectedAudioDevice === device.deviceId ? 'var(--gm-surface-hover)' : 'transparent', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gm-text)'}}>
+                        {selectedAudioDevice === device.deviceId ? <CheckCircle size={14} color="var(--gm-primary)" /> : <div style={{width: 14}}/>}
+                        <span style={{flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{device.label || `Microphone ${device.deviceId.substring(0, 5)}`}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
               <button className={`gm-icon-btn ${!noiseSuppressionEnabled ? 'danger' : ''}`} onClick={toggleNoiseSuppression} title="Toggle Noise Suppression (Background Noise)">
                 {noiseSuppressionEnabled ? <VolumeX size={20} /> : <Volume2 size={20} />}
               </button>
