@@ -262,7 +262,7 @@ export default function Home() {
           }
         };
 
-        mediaRecorder.start(4000); // 4-second chunks
+        mediaRecorder.start(2500);
         recognitionRef.current = mediaRecorder;
         console.log("Audio chunk recording started (Groq Whisper)");
       } catch (err) {
@@ -333,7 +333,7 @@ export default function Home() {
             }
           };
 
-          mediaRecorder.start(4000);
+          mediaRecorder.start(2500);
           peerRecordersRef.current[peerId] = mediaRecorder;
         } catch (err) {
           console.error("Failed to start peer MediaRecorder", err);
@@ -707,7 +707,7 @@ export default function Home() {
              socketRef.current.emit('toggle-agenda', { ...item, done: true, roomId });
           }
         });
-      } else if (data.error && !isAuto) {
+      } else if (data.error) {
         console.error("Agenda evaluation error:", data.error);
       }
     } catch (err) {
@@ -716,10 +716,11 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (!aiSidebarOpen || !isAdmin || transcripts.length === 0) return;
-    
+    // Only analyze if user is admin and there are transcripts
+    if (!isAdmin || transcripts.length === 0) return;
+
+    const currentText = transcripts.map(t => `${t.senderName}: ${t.text}`).join('\n');
     const lastTranscript = transcripts[transcripts.length - 1];
-    const currentText = transcripts.map(t => t.text).join(' ');
     
     // Only trigger if the text has changed since last analysis
     if (lastTranscript && currentText !== lastAnalyzedText.current) {
@@ -727,11 +728,11 @@ export default function Home() {
         lastAnalyzedText.current = currentText;
         generateAiQuestions(true);
         evaluateAgenda();
-      }, 2000); // 2 second pause triggers the AI
+      }, 500); // 0.5 second pause triggers the AI
       
       return () => clearTimeout(timeout);
     }
-  }, [aiSidebarOpen, isAdmin, transcripts]);
+  }, [isAdmin, transcripts]);
 
   const toggleAgendaItem = (id) => {
     const item = agendaItems.find(i => i.id === id);
