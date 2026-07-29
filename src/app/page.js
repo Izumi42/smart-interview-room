@@ -707,7 +707,7 @@ export default function Home() {
                 localStorage.setItem('meet_username', userName.trim());
               }
             }} autoComplete="off">
-              <div className="input-wrapper" style={{marginBottom: '24px', width: '100%'}}>
+              <div className="input-wrapper" style={{marginBottom: '16px', width: '100%'}}>
                 <input 
                   type="text"
                   name="participantName"
@@ -717,6 +717,19 @@ export default function Home() {
                   style={{paddingLeft: '16px', width: '100%'}}
                   autoFocus
                   autoComplete="off"
+                />
+              </div>
+              <div className="input-wrapper" style={{marginBottom: '24px', width: '100%'}}>
+                <Bot size={20} className="input-icon" />
+                <input 
+                  type="password" 
+                  placeholder="AI API Key (Optional)" 
+                  value={apiKey} 
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    localStorage.setItem('meet_api_key', e.target.value);
+                  }} 
+                  style={{paddingLeft: '48px', width: '100%'}}
                 />
               </div>
               <button type="submit" className="btn-primary" style={{width: '100%', justifyContent: 'center'}} disabled={!userName.trim()}>
@@ -778,21 +791,6 @@ export default function Home() {
                 >
                   Join
                 </button>
-              </div>
-              <div className="action-row" style={{marginTop: '16px'}}>
-                <div className="input-wrapper" style={{width: '100%'}}>
-                  <Bot size={20} className="input-icon" />
-                  <input 
-                    type="password" 
-                    placeholder="AI API Key (Groq or OpenAI) - Optional" 
-                    value={apiKey} 
-                    onChange={(e) => {
-                      setApiKey(e.target.value);
-                      localStorage.setItem('meet_api_key', e.target.value);
-                    }} 
-                    style={{paddingLeft: '48px', width: '100%'}}
-                  />
-                </div>
               </div>
             </div>
           </div>
