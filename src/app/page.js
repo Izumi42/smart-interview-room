@@ -485,7 +485,7 @@ export default function Home() {
                     if (recognitionRef.current && recognitionRef.current.state === 'recording') {
                        recognitionRef.current.stop();
                     }
-                 }, 800); // 800ms of silence flushes the chunk
+                 }, 1200); // Wait 1.2s of silence to avoid splitting sentences
                  clearTimeout(localMaxRecordTimeoutRef.current);
                  localMaxRecordTimeoutRef.current = null;
               } else {
@@ -583,7 +583,7 @@ export default function Home() {
                  peerSilenceTimeoutRef.current[targetUserId] = setTimeout(() => {
                     const rec = peerRecordersRef.current[targetUserId];
                     if (rec && rec.state === 'recording') rec.stop();
-                 }, 800);
+                 }, 1200); // Wait 1.2s of silence to avoid splitting sentences
                  clearTimeout(peerMaxRecordTimeoutRef.current[targetUserId]);
                  peerMaxRecordTimeoutRef.current[targetUserId] = null;
               } else {
@@ -1460,11 +1460,11 @@ export default function Home() {
                 </div>
                 
                 {showAudioMenu && (
-                  <div style={{position: 'absolute', bottom: '100%', left: 0, marginBottom: '8px', background: 'var(--gm-surface)', border: '1px solid var(--gm-border)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', padding: '8px 0', minWidth: '220px', zIndex: 100}}>
-                    <div style={{padding: '4px 16px', fontSize: '11px', fontWeight: 600, color: 'var(--gm-text-muted)', letterSpacing: '0.5px'}}>MICROPHONE</div>
-                    {audioDevices.length === 0 && <div style={{padding: '8px 16px', fontSize: '13px', color: 'var(--gm-text-muted)'}}>No devices found</div>}
+                  <div style={{position: 'absolute', bottom: '100%', left: 0, marginBottom: '8px', background: '#282a2d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', padding: '8px 0', minWidth: '240px', zIndex: 100}}>
+                    <div style={{padding: '4px 16px', fontSize: '11px', fontWeight: 600, color: '#9aa0a6', letterSpacing: '0.5px'}}>MICROPHONE</div>
+                    {audioDevices.length === 0 && <div style={{padding: '8px 16px', fontSize: '13px', color: '#9aa0a6'}}>No devices found</div>}
                     {audioDevices.map(device => (
-                      <div key={device.deviceId} onClick={() => changeAudioDevice(device.deviceId)} style={{padding: '8px 16px', fontSize: '13px', cursor: 'pointer', background: selectedAudioDevice === device.deviceId ? 'var(--gm-surface-hover)' : 'transparent', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gm-text)'}}>
+                      <div key={device.deviceId} onClick={() => changeAudioDevice(device.deviceId)} style={{padding: '8px 16px', fontSize: '13px', cursor: 'pointer', background: selectedAudioDevice === device.deviceId ? 'rgba(255,255,255,0.1)' : 'transparent', display: 'flex', alignItems: 'center', gap: '8px', color: '#e8eaed'}}>
                         {selectedAudioDevice === device.deviceId ? <CheckCircle size={14} color="var(--gm-primary)" /> : <div style={{width: 14}}/>}
                         <span style={{flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
                           {device.label ? device.label : (device.deviceId ? `Microphone (${device.deviceId.substring(0, 4)})` : 'System Default Microphone')}
