@@ -52,8 +52,11 @@ export async function POST(req) {
         if (data.choices && data.choices[0].message.content) {
           let text = data.choices[0].message.content;
           if (type === 'evaluate_agenda') {
-            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(text);
+            const match = text.match(/\[.*\]/s);
+            let parsed = [];
+            if (match) {
+              try { parsed = JSON.parse(match[0]); } catch(e) {}
+            }
             return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
           }
           return NextResponse.json({ questions: text.trim() });
@@ -77,8 +80,11 @@ export async function POST(req) {
         if (data.choices && data.choices[0].message.content) {
           let text = data.choices[0].message.content;
           if (type === 'evaluate_agenda') {
-            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(text);
+            const match = text.match(/\[.*\]/s);
+            let parsed = [];
+            if (match) {
+              try { parsed = JSON.parse(match[0]); } catch(e) {}
+            }
             return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
           }
           return NextResponse.json({ questions: text.trim() });
@@ -101,8 +107,11 @@ export async function POST(req) {
         if (data.candidates && data.candidates[0].content.parts[0].text) {
           let text = data.candidates[0].content.parts[0].text;
           if (type === 'evaluate_agenda') {
-            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(text);
+            const match = text.match(/\[.*\]/s);
+            let parsed = [];
+            if (match) {
+              try { parsed = JSON.parse(match[0]); } catch(e) {}
+            }
             return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
           }
           return NextResponse.json({ questions: text.trim() });
@@ -128,8 +137,11 @@ export async function POST(req) {
         if (data.content && data.content[0].text) {
           let text = data.content[0].text;
           if (type === 'evaluate_agenda') {
-            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(text);
+            const match = text.match(/\[.*\]/s);
+            let parsed = [];
+            if (match) {
+              try { parsed = JSON.parse(match[0]); } catch(e) {}
+            }
             return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
           }
           return NextResponse.json({ questions: text.trim() });
