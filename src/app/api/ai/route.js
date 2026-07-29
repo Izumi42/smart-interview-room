@@ -2,15 +2,23 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { transcript, type, agendaItems } = await req.json();
+    const { transcript, type, agendaItems, apiKey } = await req.json();
 
     if (!transcript) {
       return NextResponse.json({ error: 'No transcript provided' }, { status: 400 });
     }
 
-    const googleKey = process.env.GEMINI_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
-    const groqKey = process.env.GROQ_API_KEY;
+    let groqKey = process.env.GROQ_API_KEY;
+    let openaiKey = process.env.OPENAI_API_KEY;
+
+    // Override with client-provided key if it exists
+    if (apiKey) {
+      if (apiKey.startsWith('gsk_')) {
+        groqKey = apiKey;
+      } else if (apiKey.startsWith('sk-')) {
+        openaiKey = apiKey;
+      }
+    }
 
     let prompt = '';
     let responseFormat = 'text/plain';
@@ -57,39 +65,6 @@ export async function POST(req) {
       } catch (err) {
         console.error("Groq API Fetch failed:", err);
       }
-    } else if (googleKey) {
-      // Basic Google Gemini API Integration (v1beta)
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${googleKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: responseFormat
-            }
-          })
-        });
-        const data = await res.json();
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-          let text = data.candidates[0].content.parts[0].text;
-          if (type === 'evaluate_agenda') {
-            try {
-              text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-              const parsed = JSON.parse(text);
-              return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
-            } catch (e) {
-              console.error("Failed to parse AI evaluate_agenda response:", text, e);
-              return NextResponse.json({ answeredIds: [] });
-            }
-          }
-          return NextResponse.json({ questions: text });
-        } else {
-          console.error("Gemini API Error Response:", JSON.stringify(data, null, 2));
-        }
-      } catch (err) {
-        console.error("Gemini API Fetch failed:", err);
-      }
     } else if (openaiKey) {
       // Basic OpenAI Integration
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -110,8 +85,8 @@ export async function POST(req) {
     }
 
     // If no keys are provided, return an error
-    console.error("No AI API Keys found in environment variables.");
-    return NextResponse.json({ error: 'AI API keys not configured. Please add GROQ_API_KEY to your .env.local' }, { status: 500 });
+    console.error("No AI API Keys found in environment variables or client payload.");
+    return NextResponse.json({ error: 'AI API key not configured. Please enter it in the home page.' }, { status: 500 });
 
   } catch (error) {
     console.error("AI API Error:", error);
