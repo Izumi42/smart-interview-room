@@ -30,7 +30,7 @@ export async function POST(req) {
       groqFormData.append('file', file);
       groqFormData.append('model', 'whisper-large-v3');
       groqFormData.append('language', 'en');
-      groqFormData.append('prompt', `Interview conversation in English. Do not include subtitles or foreign languages. Context: ${context}`);
+      groqFormData.append('prompt', `This is a professional interview. The speaker is talking clearly in English. Keywords: ${context}`);
 
       const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
         method: 'POST',
@@ -52,7 +52,7 @@ export async function POST(req) {
       openaiFormData.append('file', file);
       openaiFormData.append('model', 'whisper-1');
       openaiFormData.append('language', 'en');
-      openaiFormData.append('prompt', `Interview conversation in English. Do not include subtitles or foreign languages. Context: ${context}`);
+      openaiFormData.append('prompt', `This is a professional interview. The speaker is talking clearly in English. Keywords: ${context}`);
 
       const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
