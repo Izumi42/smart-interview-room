@@ -22,7 +22,18 @@ export async function POST(req) {
       prompt = `You are an expert technical interviewer's assistant. Based on the following interview transcript, generate 3 highly relevant and insightful follow-up questions to ask the candidate. Keep them concise and challenging but fair.\n\nCRITICAL FORMATTING RULE: Output ONLY the 3 questions, each on a new line. Do NOT include any introductory text, conversational filler, or ending text. Do NOT include quotes inside the questions (e.g., no "To jump right in..."). Just the raw, direct questions. Start each question with a number.\n\nTranscript:\n${transcript}`;
     }
 
-    const targetAgent = agent || 'groq';
+    let targetAgent = agent || 'groq';
+    
+    // Auto-detect correct provider based on key prefix to prevent mismatch errors
+    if (apiKey.startsWith('gsk_')) {
+      targetAgent = 'groq';
+    } else if (apiKey.startsWith('sk-ant-')) {
+      targetAgent = 'anthropic';
+    } else if (apiKey.startsWith('sk-')) {
+      targetAgent = 'openai';
+    } else if (apiKey.startsWith('AIza')) {
+      targetAgent = 'gemini';
+    }
 
     try {
       if (targetAgent === 'groq') {
