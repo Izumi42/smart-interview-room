@@ -64,6 +64,15 @@ export default function Home() {
   }, [agendaItems]);
 
   useEffect(() => {
+    // If the user has configured an API key, they are the interviewer (Admin)
+    if (apiKey && apiKey.trim() !== '') {
+      setIsAdmin(true);
+    } else {
+      setIsAdmin(false);
+    }
+  }, [apiKey]);
+
+  useEffect(() => {
     const savedName = localStorage.getItem('meet_username');
     if (savedName) {
       setUserName(savedName);
@@ -667,6 +676,7 @@ export default function Home() {
       if (data.questions) {
         setAiQuestions(data.questions);
       } else {
+        console.error("AI Generation Failed:", data.error);
         if (!isAuto) alert(data.error || "Could not generate questions.");
       }
     } catch (err) {
