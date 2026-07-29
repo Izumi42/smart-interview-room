@@ -719,7 +719,7 @@ export default function Home() {
                   autoComplete="off"
                 />
               </div>
-              <div className="input-wrapper" style={{marginBottom: '24px', width: '100%'}}>
+              <div className="input-wrapper" style={{marginBottom: '8px', width: '100%'}}>
                 <Bot size={20} className="input-icon" />
                 <input 
                   type="password" 
@@ -732,6 +732,9 @@ export default function Home() {
                   style={{paddingLeft: '48px', width: '100%'}}
                   required
                 />
+              </div>
+              <div style={{fontSize: '12px', color: 'var(--gm-text-muted)', textAlign: 'left', marginBottom: '24px', lineHeight: '1.4', background: '#f8f9fa', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e9ecef'}}>
+                <span style={{fontWeight: 600, color: 'var(--gm-primary)'}}>💡 Tip:</span> Paste any supported API key (Groq or OpenAI) and we will automatically route it to the correct provider!
               </div>
               <button type="submit" className="btn-primary" style={{width: '100%', justifyContent: 'center'}} disabled={!userName.trim() || !apiKey.trim()}>
                 Continue
