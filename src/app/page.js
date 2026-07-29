@@ -46,6 +46,7 @@ export default function Home() {
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
+  const peerRecordersRef = useRef({});
   const transcriptsRef = useRef([]);
   const agendaItemsRef = useRef([]);
   const sessionIdRef = useRef('');
@@ -275,6 +276,81 @@ export default function Home() {
     }
 
   }, [inCall, micOn, roomId, userName, isAdmin]);
+
+  // Admin transcribes everyone else's audio since candidates don't have API keys
+  useEffect(() => {
+    if (!inCall || !isAdmin) {
+      Object.values(peerRecordersRef.current).forEach(r => { try { r.stop(); } catch(e){} });
+      peerRecordersRef.current = {};
+      return;
+    }
+
+    const apiKeyStr = localStorage.getItem('meet_api_key');
+    const aiModelStr = localStorage.getItem('meet_ai_model') || 'groq';
+    if (!apiKeyStr) return;
+
+    Object.entries(peers).forEach(([peerId, peer]) => {
+      if (peer.stream && peer.micOn && !peerRecordersRef.current[peerId]) {
+        try {
+          const audioStream = new MediaStream(peer.stream.getAudioTracks());
+          if (audioStream.getAudioTracks().length === 0) return;
+
+          const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+            ? { mimeType: 'audio/webm;codecs=opus' } 
+            : MediaRecorder.isTypeSupported('audio/webm') 
+              ? { mimeType: 'audio/webm' } 
+              : {};
+          
+          const mediaRecorder = new MediaRecorder(audioStream, options);
+          
+          mediaRecorder.ondataavailable = async (event) => {
+            if (event.data.size > 0) {
+              const formData = new FormData();
+              formData.append('file', event.data, 'chunk.webm');
+              formData.append('apiKey', apiKeyStr);
+              formData.append('agent', aiModelStr);
+              
+              try {
+                const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.text && data.text.trim() && socketRef.current) {
+                    socketRef.current.emit('transcript', {
+                      id: Math.random().toString(36).substr(2, 9),
+                      roomId,
+                      userId: peerId,
+                      senderName: `${peer.name || 'Candidate'} (Candidate)`,
+                      text: data.text.trim(),
+                      isFinal: true,
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      unix: Date.now()
+                    });
+                  }
+                }
+              } catch (err) {
+                console.error("Peer transcription failed", err);
+              }
+            }
+          };
+
+          mediaRecorder.start(4000);
+          peerRecordersRef.current[peerId] = mediaRecorder;
+        } catch (err) {
+          console.error("Failed to start peer MediaRecorder", err);
+        }
+      } else if ((!peer.stream || !peer.micOn) && peerRecordersRef.current[peerId]) {
+        try { peerRecordersRef.current[peerId].stop(); } catch(e){}
+        delete peerRecordersRef.current[peerId];
+      }
+    });
+
+    Object.keys(peerRecordersRef.current).forEach(peerId => {
+      if (!peers[peerId]) {
+        try { peerRecordersRef.current[peerId].stop(); } catch(e){}
+        delete peerRecordersRef.current[peerId];
+      }
+    });
+  }, [peers, inCall, isAdmin]);
 
   useEffect(() => {
     if (inCall && localVideoRef.current && localStreamRef.current) {
@@ -954,7 +1030,7 @@ export default function Home() {
             <div className="video-area">
               <div className="video-grid" style={{ gridTemplateColumns: `repeat(${gridColumns}, 1fr)` }}>
                 <div className="video-wrapper" style={{ 
-                  border: (localIsSpeaking && micOn) ? '3px solid #1a73e8' : 'none', 
+                  border: (localIsSpeaking && micOn) ? '3px solid #1a73e8' : '3px solid transparent', 
                   boxShadow: (localIsSpeaking && micOn) ? '0 0 15px rgba(26, 115, 232, 0.6)' : 'none',
                   transition: 'border 0.2s, box-shadow 0.2s',
                   boxSizing: 'border-box'
@@ -967,7 +1043,7 @@ export default function Home() {
                   const displayName = peer.name || id.substring(0, 8);
                   return (
                   <div key={id} className="video-wrapper" style={{ 
-                    border: (peer.isSpeaking && peer.micOn) ? '3px solid #1a73e8' : 'none', 
+                    border: (peer.isSpeaking && peer.micOn) ? '3px solid #1a73e8' : '3px solid transparent', 
                     boxShadow: (peer.isSpeaking && peer.micOn) ? '0 0 15px rgba(26, 115, 232, 0.6)' : 'none',
                     transition: 'border 0.2s, box-shadow 0.2s',
                     boxSizing: 'border-box'
