@@ -2,22 +2,14 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { transcript, type, agendaItems, apiKey } = await req.json();
+    const { transcript, type, agendaItems, agent, apiKey } = await req.json();
 
     if (!transcript) {
       return NextResponse.json({ error: 'No transcript provided' }, { status: 400 });
     }
 
-    let groqKey = process.env.GROQ_API_KEY;
-    let openaiKey = process.env.OPENAI_API_KEY;
-
-    // Override with client-provided key if it exists
-    if (apiKey) {
-      if (apiKey.startsWith('gsk_')) {
-        groqKey = apiKey;
-      } else if (apiKey.startsWith('sk-')) {
-        openaiKey = apiKey;
-      }
+    if (!apiKey) {
+      return NextResponse.json({ error: 'AI API key not configured. Please enter it in the home page.' }, { status: 400 });
     }
 
     let prompt = '';
@@ -30,66 +22,119 @@ export async function POST(req) {
       prompt = `You are an expert technical interviewer's assistant. Based on the following interview transcript, generate 3 highly relevant and insightful follow-up questions to ask the candidate. Keep them concise and challenging but fair.\n\nCRITICAL FORMATTING RULE: Output ONLY the 3 questions, each on a new line. Do NOT include any introductory text, conversational filler, or ending text. Do NOT include quotes inside the questions (e.g., no "To jump right in..."). Just the raw, direct questions. Start each question with a number.\n\nTranscript:\n${transcript}`;
     }
 
-    if (groqKey) {
-      // Groq integration for ultra-fast Llama-3 responses
-      try {
+    const targetAgent = agent || 'groq';
+
+    try {
+      if (targetAgent === 'groq') {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${groqKey}`
+            'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
-            model: "llama3-8b-8192", // Faster, lighter model with better free-tier rate limits
+            model: "llama3-8b-8192",
             messages: [{ role: "user", content: prompt }]
           })
         });
         const data = await res.json();
-        
         if (data.choices && data.choices[0].message.content) {
           let text = data.choices[0].message.content;
           if (type === 'evaluate_agenda') {
-            try {
-              text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-              const parsed = JSON.parse(text);
-              return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
-            } catch (e) {
-              console.error("Failed to parse Groq evaluate_agenda response:", text, e);
-              return NextResponse.json({ answeredIds: [] });
-            }
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(text);
+            return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
           }
           return NextResponse.json({ questions: text.trim() });
-        } else {
-          console.error("Groq API Error Response:", JSON.stringify(data, null, 2));
         }
-      } catch (err) {
-        console.error("Groq API Fetch failed:", err);
+        return NextResponse.json({ error: 'Groq API Error' }, { status: 500 });
+      } 
+      
+      else if (targetAgent === 'openai') {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        const data = await res.json();
+        if (data.choices && data.choices[0].message.content) {
+          let text = data.choices[0].message.content;
+          if (type === 'evaluate_agenda') {
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(text);
+            return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
+          }
+          return NextResponse.json({ questions: text.trim() });
+        }
+        return NextResponse.json({ error: 'OpenAI API Error' }, { status: 500 });
       }
-    } else if (openaiKey) {
-      // Basic OpenAI Integration
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      const data = await res.json();
-      if (data.choices && data.choices[0].message.content) {
-        return NextResponse.json({ questions: data.choices[0].message.content });
+
+      else if (targetAgent === 'gemini') {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: responseFormat
+            }
+          })
+        });
+        const data = await res.json();
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+          let text = data.candidates[0].content.parts[0].text;
+          if (type === 'evaluate_agenda') {
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(text);
+            return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
+          }
+          return NextResponse.json({ questions: text.trim() });
+        }
+        return NextResponse.json({ error: 'Gemini API Error' }, { status: 500 });
       }
+
+      else if (targetAgent === 'anthropic') {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-3-haiku-20240307',
+            max_tokens: 1024,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        const data = await res.json();
+        if (data.content && data.content[0].text) {
+          let text = data.content[0].text;
+          if (type === 'evaluate_agenda') {
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(text);
+            return NextResponse.json({ answeredIds: Array.isArray(parsed) ? parsed : [] });
+          }
+          return NextResponse.json({ questions: text.trim() });
+        }
+        return NextResponse.json({ error: 'Anthropic API Error' }, { status: 500 });
+      }
+
+      return NextResponse.json({ error: 'Unknown AI Agent' }, { status: 400 });
+
+    } catch (apiError) {
+      console.error(`AI API Error (${targetAgent}):`, apiError);
+      return NextResponse.json({ error: `Failed to call ${targetAgent} API`, answeredIds: [] }, { status: 500 });
     }
 
-    // If no keys are provided, return an error
-    console.error("No AI API Keys found in environment variables or client payload.");
-    return NextResponse.json({ error: 'AI API key not configured. Please enter it in the home page.' }, { status: 500 });
-
   } catch (error) {
-    console.error("AI API Error:", error);
-    return NextResponse.json({ error: 'Failed to generate questions' }, { status: 500 });
+    console.error("Internal Server Error:", error);
+    return NextResponse.json({ error: 'Internal server error', answeredIds: [] }, { status: 500 });
   }
 }
