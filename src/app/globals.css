@@ -397,6 +397,11 @@ video {
   background: transparent;
 }
 
+.gm-icon-btn.ghost.active {
+  color: var(--gm-active);
+  background: transparent;
+}
+
 .gm-end-call {
   width: 56px;
   height: 40px;
