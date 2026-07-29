@@ -1129,7 +1129,7 @@ export default function Home() {
                     transition: 'border 0.2s, box-shadow 0.2s',
                     boxSizing: 'border-box'
                   }}>
-                    <video ref={el => { if (el && peer.stream) el.srcObject = peer.stream; }} autoPlay playsInline disablePictureInPicture className={`remote-video ${!peer.videoOn ? 'hidden' : ''}`}></video>
+                    <video ref={el => { if (el && peer.stream && el.srcObject !== peer.stream) el.srcObject = peer.stream; }} autoPlay playsInline disablePictureInPicture className={`remote-video ${!peer.videoOn ? 'hidden' : ''}`}></video>
                     {!peer.videoOn && <div className="video-off-avatar">{displayName.charAt(0).toUpperCase()}</div>}
                     <div className="name-tag">
                       {displayName} {peer.handRaised && ' ✋'} {!peer.micOn && ' 🔇'}
@@ -1358,7 +1358,9 @@ export default function Home() {
                     {audioDevices.map(device => (
                       <div key={device.deviceId} onClick={() => changeAudioDevice(device.deviceId)} style={{padding: '8px 16px', fontSize: '13px', cursor: 'pointer', background: selectedAudioDevice === device.deviceId ? 'var(--gm-surface-hover)' : 'transparent', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gm-text)'}}>
                         {selectedAudioDevice === device.deviceId ? <CheckCircle size={14} color="var(--gm-primary)" /> : <div style={{width: 14}}/>}
-                        <span style={{flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{device.label || `Microphone ${device.deviceId.substring(0, 5)}`}</span>
+                        <span style={{flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                          {device.label ? device.label : (device.deviceId ? `Microphone (${device.deviceId.substring(0, 4)})` : 'System Default Microphone')}
+                        </span>
                       </div>
                     ))}
                   </div>
