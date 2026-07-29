@@ -12,6 +12,7 @@ export default function Home() {
   const [inCall, setInCall] = useState(false);
   const [roomId, setRoomId] = useState('');
   const [micOn, setMicOn] = useState(false);
+  const [showAiSettings, setShowAiSettings] = useState(false);
   const [videoOn, setVideoOn] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
   const [userName, setUserName] = useState('');
@@ -776,36 +777,64 @@ export default function Home() {
                 </div>
                 
                 {nameSubmitted && (
-                  <div style={{display: 'flex', gap: '8px', alignItems: 'center', background: 'white', padding: '4px 8px', borderRadius: '8px', border: '1px solid var(--gm-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'}}>
-                    <Bot size={14} color="var(--gm-primary)" />
-                    <select 
-                      value={aiModel} 
-                      onChange={(e) => {
-                        setAiModel(e.target.value);
-                        localStorage.setItem('meet_ai_model', e.target.value);
-                      }} 
-                      style={{border: 'none', background: 'transparent', outline: 'none', fontSize: '12px', color: 'var(--gm-text)', cursor: 'pointer', maxWidth: '80px', padding: 0}}
-                    >
-                      <option value="groq">Groq</option>
-                      <option value="openai">OpenAI</option>
-                      <option value="gemini">Gemini</option>
-                      <option value="anthropic">Claude</option>
-                    </select>
-                    <input 
-                      type="password" 
-                      placeholder="AI API Key (Optional)" 
-                      value={apiKey} 
-                      onChange={(e) => {
-                        setApiKey(e.target.value);
-                        localStorage.setItem('meet_api_key', e.target.value);
-                      }} 
-                      style={{border: 'none', borderLeft: '1px solid var(--gm-border)', paddingLeft: '8px', outline: 'none', fontSize: '12px', width: '140px'}}
-                    />
-                  </div>
+                  <button onClick={() => setShowAiSettings(true)} style={{display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--gm-surface)', border: '1px solid var(--gm-border)', padding: '6px 12px', borderRadius: '16px', fontSize: '13px', fontWeight: 500, color: 'var(--gm-text)', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'all 0.2s'}}>
+                    <Bot size={16} color="var(--gm-primary)" />
+                    AI Settings
+                  </button>
                 )}
               </div>
             </div>
           </header>
+          
+          {showAiSettings && (
+            <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              <div style={{background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 16px 48px rgba(0,0,0,0.2)', maxWidth: '400px', width: '90%'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+                  <h2 style={{margin: 0, fontSize: '18px', fontWeight: 500, color: 'var(--gm-text)', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <Bot size={20} color="var(--gm-primary)"/> AI Settings
+                  </h2>
+                  <button onClick={() => setShowAiSettings(false)} style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gm-text-muted)'}}>
+                    <X size={20} />
+                  </button>
+                </div>
+                <p style={{color: 'var(--gm-text-muted)', fontSize: '13px', marginBottom: '20px'}}>Configure AI to enable smart transcripts and suggested interview questions. (Admin only)</p>
+                
+                <label style={{display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px'}}>AI Model</label>
+                <select 
+                  value={aiModel} 
+                  onChange={(e) => {
+                    setAiModel(e.target.value);
+                    localStorage.setItem('meet_ai_model', e.target.value);
+                  }} 
+                  style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--gm-border)', marginBottom: '16px', fontSize: '14px', outline: 'none', background: '#f8f9fa'}}
+                >
+                  <option value="groq">Groq (Llama-3 - Fastest)</option>
+                  <option value="openai">ChatGPT (OpenAI)</option>
+                  <option value="gemini">Gemini (Google)</option>
+                  <option value="anthropic">Claude (Anthropic)</option>
+                </select>
+
+                <label style={{display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px'}}>API Key (Optional)</label>
+                <div className="input-wrapper" style={{marginBottom: '24px'}}>
+                  <Keyboard size={18} className="input-icon" />
+                  <input 
+                    type="password" 
+                    placeholder="Enter API Key" 
+                    value={apiKey} 
+                    onChange={(e) => {
+                      setApiKey(e.target.value);
+                      localStorage.setItem('meet_api_key', e.target.value);
+                    }} 
+                    style={{width: '100%', paddingLeft: '40px', paddingRight: '12px'}}
+                  />
+                </div>
+                <button onClick={() => setShowAiSettings(false)} className="btn-primary" style={{width: '100%', justifyContent: 'center'}}>
+                  Save & Close
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="join-layout">
             <div className="join-content">
               <h1>Premium video meetings. <br/>Now free for everyone.</h1>
