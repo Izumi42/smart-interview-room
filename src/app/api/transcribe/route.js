@@ -4,38 +4,68 @@ export async function POST(req) {
   try {
     const formData = await req.formData();
     const file = formData.get('file');
+    const apiKey = formData.get('apiKey');
+    const agent = formData.get('agent') || 'groq';
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    const groqKey = process.env.GROQ_API_KEY;
-    if (!groqKey) {
-      return NextResponse.json({ error: 'Groq API Key missing' }, { status: 500 });
+    if (!apiKey) {
+      return NextResponse.json({ error: 'API Key is required for transcription' }, { status: 400 });
     }
 
-    // Forward the form data directly to Groq Whisper
-    const groqFormData = new FormData();
-    groqFormData.append('file', file);
-    groqFormData.append('model', 'whisper-large-v3');
+    let useGroq = false;
+    let useOpenAI = false;
 
-    const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqKey}`
-        // Do NOT set Content-Type manually, fetch sets it with boundaries for FormData
-      },
-      body: groqFormData
-    });
+    if (apiKey.startsWith('gsk_') || agent === 'groq') {
+      useGroq = true;
+    } else if (apiKey.startsWith('sk-') || agent === 'openai' || agent === 'gemini' || agent === 'anthropic') {
+      useOpenAI = true;
+    }
 
-    const data = await res.json();
+    if (useGroq) {
+      const groqFormData = new FormData();
+      groqFormData.append('file', file);
+      groqFormData.append('model', 'whisper-large-v3');
+
+      const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: groqFormData
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return NextResponse.json({ error: data.error?.message || 'Groq Transcription failed' }, { status: res.status });
+      }
+      return NextResponse.json({ text: data.text });
+    } 
     
-    if (!res.ok) {
-      console.error("Groq Whisper Error:", data);
-      return NextResponse.json({ error: data.error?.message || 'Transcription failed' }, { status: res.status });
+    else if (useOpenAI) {
+      const openaiFormData = new FormData();
+      openaiFormData.append('file', file);
+      openaiFormData.append('model', 'whisper-1');
+
+      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: openaiFormData
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return NextResponse.json({ error: data.error?.message || 'OpenAI Transcription failed' }, { status: res.status });
+      }
+      return NextResponse.json({ text: data.text });
     }
 
-    return NextResponse.json({ text: data.text });
+    return NextResponse.json({ error: 'Transcription requires a valid Groq (gsk_) or OpenAI (sk-) API Key.' }, { status: 400 });
+
   } catch (error) {
     console.error("Transcription API Error:", error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
