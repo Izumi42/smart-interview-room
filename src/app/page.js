@@ -777,10 +777,12 @@ export default function Home() {
                 </div>
                 
                 {nameSubmitted && (
-                  <button onClick={() => setShowAiSettings(true)} style={{display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--gm-surface)', border: '1px solid var(--gm-border)', padding: '6px 12px', borderRadius: '16px', fontSize: '13px', fontWeight: 500, color: 'var(--gm-text)', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'all 0.2s'}}>
-                    <Bot size={16} color="var(--gm-primary)" />
-                    AI Settings
-                  </button>
+                  <div onClick={() => setShowAiSettings(true)} style={{display: 'flex', alignItems: 'center', gap: '12px', background: '#f1f3f4', padding: '4px 12px 4px 4px', borderRadius: '24px', cursor: 'pointer', transition: 'background 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.background = '#e8eaed'} onMouseLeave={(e) => e.currentTarget.style.background = '#f1f3f4'}>
+                    <div style={{width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gm-primary)', color: 'white', borderRadius: '50%'}}>
+                      <Bot size={16} />
+                    </div>
+                    <span style={{fontSize: '14px', fontWeight: 500, color: 'var(--gm-text)', marginRight: '4px'}}>AI Settings</span>
+                  </div>
                 )}
               </div>
             </div>
