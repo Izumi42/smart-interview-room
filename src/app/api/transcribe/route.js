@@ -6,6 +6,7 @@ export async function POST(req) {
     const file = formData.get('file');
     const apiKey = formData.get('apiKey');
     const agent = formData.get('agent') || 'groq';
+    const context = formData.get('context') || '';
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -29,7 +30,7 @@ export async function POST(req) {
       groqFormData.append('file', file);
       groqFormData.append('model', 'whisper-large-v3');
       groqFormData.append('language', 'en');
-      groqFormData.append('prompt', 'Interview conversation in English. Do not include subtitles or foreign languages.');
+      groqFormData.append('prompt', `Interview conversation in English. Do not include subtitles or foreign languages. Context: ${context}`);
 
       const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
         method: 'POST',
@@ -51,7 +52,7 @@ export async function POST(req) {
       openaiFormData.append('file', file);
       openaiFormData.append('model', 'whisper-1');
       openaiFormData.append('language', 'en');
-      openaiFormData.append('prompt', 'Interview conversation in English. Do not include subtitles or foreign languages.');
+      openaiFormData.append('prompt', `Interview conversation in English. Do not include subtitles or foreign languages. Context: ${context}`);
 
       const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
