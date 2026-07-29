@@ -723,16 +723,17 @@ export default function Home() {
                 <Bot size={20} className="input-icon" />
                 <input 
                   type="password" 
-                  placeholder="AI API Key (Optional)" 
+                  placeholder="AI API Key (Groq or OpenAI)" 
                   value={apiKey} 
                   onChange={(e) => {
                     setApiKey(e.target.value);
                     localStorage.setItem('meet_api_key', e.target.value);
                   }} 
                   style={{paddingLeft: '48px', width: '100%'}}
+                  required
                 />
               </div>
-              <button type="submit" className="btn-primary" style={{width: '100%', justifyContent: 'center'}} disabled={!userName.trim()}>
+              <button type="submit" className="btn-primary" style={{width: '100%', justifyContent: 'center'}} disabled={!userName.trim() || !apiKey.trim()}>
                 Continue
               </button>
             </form>
