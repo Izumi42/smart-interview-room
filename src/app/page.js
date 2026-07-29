@@ -758,20 +758,19 @@ export default function Home() {
                 <Keyboard size={20} className="input-icon" />
                 <input 
                   type="password" 
-                  placeholder="AI API Key" 
+                  placeholder="AI API Key (Optional - Admins only)" 
                   value={apiKey} 
                   onChange={(e) => {
                     setApiKey(e.target.value);
                     localStorage.setItem('meet_api_key', e.target.value);
                   }} 
                   style={{paddingLeft: '48px', width: '100%'}}
-                  required
                 />
               </div>
               <div style={{fontSize: '12px', color: 'var(--gm-text-muted)', textAlign: 'left', marginBottom: '24px', lineHeight: '1.4', background: '#f8f9fa', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e9ecef'}}>
-                <span style={{fontWeight: 600, color: 'var(--gm-primary)'}}>💡 Tip:</span> Select your preferred AI Model and provide the corresponding API key.
+                <span style={{fontWeight: 600, color: 'var(--gm-primary)'}}>💡 Tip:</span> Admins can provide an API key to enable AI features. Candidates can leave it blank.
               </div>
-              <button type="submit" className="btn-primary" style={{width: '100%', justifyContent: 'center'}} disabled={!userName.trim() || !apiKey.trim()}>
+              <button type="submit" className="btn-primary" style={{width: '100%', justifyContent: 'center'}} disabled={!userName.trim()}>
                 Continue
               </button>
             </form>
