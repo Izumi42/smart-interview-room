@@ -16,6 +16,7 @@ export default function Home() {
   const [screenSharing, setScreenSharing] = useState(false);
   const [userName, setUserName] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [aiModel, setAiModel] = useState('groq');
   const [nameSubmitted, setNameSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -68,6 +69,11 @@ export default function Home() {
     const savedApiKey = localStorage.getItem('meet_api_key');
     if (savedApiKey) {
       setApiKey(savedApiKey);
+    }
+
+    const savedAiModel = localStorage.getItem('meet_ai_model');
+    if (savedAiModel) {
+      setAiModel(savedAiModel);
     }
     
     let sid = localStorage.getItem('meet_session_id');
@@ -563,7 +569,7 @@ export default function Home() {
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: transcriptText, type: 'questions', apiKey: apiKey || localStorage.getItem('meet_api_key') })
+        body: JSON.stringify({ transcript: transcriptText, type: 'questions', agent: aiModel || localStorage.getItem('meet_ai_model') || 'groq', apiKey: apiKey || localStorage.getItem('meet_api_key') })
       });
       const data = await res.json();
       if (data.questions) {
@@ -597,6 +603,7 @@ export default function Home() {
           transcript: transcriptText, 
           type: 'evaluate_agenda',
           agendaItems: pendingItems.map(i => ({ id: i.id, text: i.text })),
+          agent: aiModel || localStorage.getItem('meet_ai_model') || 'groq',
           apiKey: apiKey || localStorage.getItem('meet_api_key')
         })
       });
@@ -719,11 +726,28 @@ export default function Home() {
                   autoComplete="off"
                 />
               </div>
-              <div className="input-wrapper" style={{marginBottom: '8px', width: '100%'}}>
+              <div className="input-wrapper" style={{marginBottom: '8px', width: '100%', position: 'relative'}}>
                 <Bot size={20} className="input-icon" />
+                <select 
+                  value={aiModel} 
+                  onChange={(e) => {
+                    setAiModel(e.target.value);
+                    localStorage.setItem('meet_ai_model', e.target.value);
+                  }} 
+                  style={{paddingLeft: '48px', width: '100%', height: '44px', border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', color: 'var(--gm-text)', cursor: 'pointer', appearance: 'none'}}
+                >
+                  <option value="groq">Groq (Llama-3 - Fastest)</option>
+                  <option value="openai">ChatGPT (OpenAI)</option>
+                  <option value="gemini">Gemini (Google)</option>
+                  <option value="anthropic">Claude (Anthropic)</option>
+                </select>
+                <div style={{position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--gm-text-muted)', fontSize: '12px'}}>▼</div>
+              </div>
+              <div className="input-wrapper" style={{marginBottom: '8px', width: '100%'}}>
+                <Keyboard size={20} className="input-icon" />
                 <input 
                   type="password" 
-                  placeholder="AI API Key (Groq or OpenAI)" 
+                  placeholder="AI API Key" 
                   value={apiKey} 
                   onChange={(e) => {
                     setApiKey(e.target.value);
@@ -734,7 +758,7 @@ export default function Home() {
                 />
               </div>
               <div style={{fontSize: '12px', color: 'var(--gm-text-muted)', textAlign: 'left', marginBottom: '24px', lineHeight: '1.4', background: '#f8f9fa', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e9ecef'}}>
-                <span style={{fontWeight: 600, color: 'var(--gm-primary)'}}>💡 Tip:</span> Paste any supported API key (Groq or OpenAI) and we will automatically route it to the correct provider!
+                <span style={{fontWeight: 600, color: 'var(--gm-primary)'}}>💡 Tip:</span> Select your preferred AI Model and provide the corresponding API key.
               </div>
               <button type="submit" className="btn-primary" style={{width: '100%', justifyContent: 'center'}} disabled={!userName.trim() || !apiKey.trim()}>
                 Continue
