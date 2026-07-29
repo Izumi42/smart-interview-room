@@ -25,9 +25,7 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [transcripts, setTranscripts] = useState([]);
   const [aiQuestions, setAiQuestions] = useState('');
-  const [scorecard, setScorecard] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isGeneratingScorecard, setIsGeneratingScorecard] = useState(false);
   const [localSocketId, setLocalSocketId] = useState('');
   const [localIsSpeaking, setLocalIsSpeaking] = useState(false);
   const [agendaItems, setAgendaItems] = useState([]);
@@ -48,6 +46,8 @@ export default function Home() {
   const sessionIdRef = useRef('');
   const lastAnalyzedText = useRef('');
   const userNameRef = useRef(userName);
+  const isGeneratingRef = useRef(false);
+  const audioCtxRef = useRef(null);
 
   useEffect(() => {
     userNameRef.current = userName;
@@ -168,7 +168,6 @@ export default function Home() {
     socket.on('room-history', (data) => {
       if (data.transcripts && data.transcripts.length > 0) setTranscripts(data.transcripts);
       if (data.agenda && data.agenda.length > 0) setAgendaItems(data.agenda);
-      if (data.scorecard) setScorecard(data.scorecard);
     });
 
     socket.on('add-agenda', (item) => {
@@ -182,9 +181,7 @@ export default function Home() {
       setAgendaItems(prev => prev.map(i => i.id === item.id ? item : i));
     });
 
-    socket.on('scorecard-ready', (payload) => {
-      setScorecard(payload.content);
-    });
+
 
     return () => {
       if (socket) socket.disconnect();
@@ -248,7 +245,7 @@ export default function Home() {
         recognitionRef.current = null;
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [inCall, micOn, roomId, userName, isAdmin]);
 
   useEffect(() => {
@@ -577,35 +574,6 @@ export default function Home() {
     }
   };
 
-  const generateScorecard = async () => {
-    const currentTranscripts = transcriptsRef.current;
-    if (currentTranscripts.length === 0) {
-      alert("No conversation to analyze yet!");
-      return;
-    }
-    
-    setIsGeneratingScorecard(true);
-    try {
-      const transcriptText = currentTranscripts.map(t => `${t.senderName}: ${t.text}`).join('\n');
-      const res = await fetch('/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: transcriptText, type: 'scorecard' })
-      });
-      const data = await res.json();
-      if (data.questions) {
-        setScorecard(data.questions);
-        if (socketRef.current) {
-          socketRef.current.emit('save-scorecard', { roomId, content: data.questions });
-        }
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Failed to generate scorecard.");
-    } finally {
-      setIsGeneratingScorecard(false);
-    }
-  };
 
   const evaluateAgenda = async () => {
     const currentTranscripts = transcriptsRef.current;
@@ -890,10 +858,6 @@ export default function Home() {
                           <Download size={18} />
                           Download Summary
                         </button>
-                        <button onClick={generateScorecard} className="btn-scorecard" style={{width: '100%', justifyContent: 'center', marginBottom: '24px'}} disabled={isGeneratingScorecard}>
-                          {isGeneratingScorecard ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-                          {isGeneratingScorecard ? 'Generating Scorecard...' : 'End & Generate Scorecard'}
-                        </button>
                         
                         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px'}}>
                           <h4 style={{margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--gm-text)'}}>Suggested Questions</h4>
@@ -1081,31 +1045,6 @@ export default function Home() {
               </button>
             </div>
             
-            {/* Scorecard Modal */}
-            {scorecard && (
-              <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                <div style={{background: 'white', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
-                  <div style={{padding: '16px 20px', borderBottom: '1px solid var(--gm-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                    <h2 style={{margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px'}}><Sparkles size={20} color="var(--gm-primary)" /> Candidate Scorecard</h2>
-                    <button onClick={() => setScorecard(null)} style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gm-text-muted)'}}><X size={20} /></button>
-                  </div>
-                  <div style={{padding: '20px', overflowY: 'auto', flex: 1, whiteSpace: 'pre-wrap', fontSize: '15px', lineHeight: '1.6'}}>
-                    {scorecard}
-                  </div>
-                  <div style={{padding: '16px 20px', borderTop: '1px solid var(--gm-border)', background: 'var(--gm-bg)', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button onClick={() => setScorecard(null)} className="btn-secondary">Close</button>
-                    <button onClick={() => {
-                      const blob = new Blob([scorecard], { type: 'text/plain' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `Scorecard_${new Date().getTime()}.txt`;
-                      a.click();
-                    }} className="btn-primary">Download Scorecard</button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}

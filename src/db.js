@@ -3,12 +3,9 @@ const path = require('path');
 
 const dbPath = path.resolve(process.cwd(), 'meet-n-greet-db.json');
 
-// Memory cache
 let dbCache = {
   rooms: {},
-  transcripts: {},
-  agenda_items: {},
-  scorecards: {}
+  agenda_items: {}
 };
 
 // Initialize database file if it doesn't exist, otherwise load into memory
@@ -26,7 +23,6 @@ if (!fs.existsSync(dbPath)) {
 // Ensure all root keys exist in case of legacy db format
 if (!dbCache.rooms) dbCache.rooms = {};
 if (!dbCache.agenda_items) dbCache.agenda_items = {};
-if (!dbCache.scorecards) dbCache.scorecards = {};
 
 let writeTimeout = null;
 
@@ -81,12 +77,5 @@ module.exports = {
     writeDBAsync();
   },
 
-  // Scorecards
-  getScorecard: (roomId) => {
-    return dbCache.scorecards[roomId] || null;
-  },
-  saveScorecard: (roomId, content) => {
-    dbCache.scorecards[roomId] = content;
-    writeDBAsync();
-  }
+
 };

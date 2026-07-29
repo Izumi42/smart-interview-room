@@ -56,8 +56,7 @@ app.prepare().then(() => {
       socket.emit('room-joined', { isAdmin });
 
       const agenda = db.getAgendaItems(roomId);
-      const scorecard = db.getScorecard(roomId);
-      socket.emit('room-history', { transcripts: [], agenda, scorecard });
+      socket.emit('room-history', { transcripts: [], agenda });
 
       // Notify others in the room
       socket.to(roomId).emit('user-connected', socket.id);
@@ -122,11 +121,7 @@ app.prepare().then(() => {
       io.to(payload.roomId).emit('toggle-agenda', payload);
     });
 
-    socket.on('save-scorecard', (payload) => {
-      // payload: { roomId, content }
-      db.saveScorecard(payload.roomId, payload.content);
-      io.to(payload.roomId).emit('scorecard-ready', payload);
-    });
+
   });
 
   server.listen(port, () => {

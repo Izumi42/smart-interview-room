@@ -15,9 +15,7 @@ export async function POST(req) {
     let prompt = '';
     let responseFormat = 'text/plain';
 
-    if (type === 'scorecard') {
-      prompt = `You are an expert technical interviewer. Based on the following interview transcript, generate a brief, professional Candidate Scorecard. Include a summary of their performance, key strengths, areas for improvement, and a final recommendation.\n\nTranscript:\n${transcript}`;
-    } else if (type === 'evaluate_agenda') {
+    if (type === 'evaluate_agenda') {
       prompt = `You are an expert technical interviewer's assistant. Based on the following interview transcript, review the pending agenda items. IMPORTANT: An agenda item should ONLY be considered addressed if the CANDIDATE provides an answer or explanation related to it. If only the Interviewer mentions it, or if it is just being asked, DO NOT check it off. If the candidate has sufficiently answered any of the agenda items, return a JSON array containing the IDs of those items. Return ONLY a valid JSON array of strings (e.g., ["id1", "id2"]). Return an empty array [] if none have been addressed.\n\nPending Agenda Items:\n${JSON.stringify(agendaItems)}\n\nTranscript:\n${transcript}`;
       responseFormat = 'application/json';
     } else {
