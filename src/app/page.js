@@ -15,6 +15,7 @@ export default function Home() {
   const [videoOn, setVideoOn] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
   const [userName, setUserName] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [nameSubmitted, setNameSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -62,6 +63,11 @@ export default function Home() {
     if (savedName) {
       setUserName(savedName);
       setNameSubmitted(true);
+    }
+    
+    const savedApiKey = localStorage.getItem('meet_api_key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
     }
     
     let sid = localStorage.getItem('meet_session_id');
@@ -557,7 +563,7 @@ export default function Home() {
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: transcriptText, type: 'questions' })
+        body: JSON.stringify({ transcript: transcriptText, type: 'questions', apiKey: apiKey || localStorage.getItem('meet_api_key') })
       });
       const data = await res.json();
       if (data.questions) {
@@ -590,7 +596,8 @@ export default function Home() {
         body: JSON.stringify({ 
           transcript: transcriptText, 
           type: 'evaluate_agenda',
-          agendaItems: pendingItems.map(i => ({ id: i.id, text: i.text }))
+          agendaItems: pendingItems.map(i => ({ id: i.id, text: i.text })),
+          apiKey: apiKey || localStorage.getItem('meet_api_key')
         })
       });
       const data = await res.json();
@@ -771,6 +778,21 @@ export default function Home() {
                 >
                   Join
                 </button>
+              </div>
+              <div className="action-row" style={{marginTop: '16px'}}>
+                <div className="input-wrapper" style={{width: '100%'}}>
+                  <Bot size={20} className="input-icon" />
+                  <input 
+                    type="password" 
+                    placeholder="AI API Key (Groq or OpenAI) - Optional" 
+                    value={apiKey} 
+                    onChange={(e) => {
+                      setApiKey(e.target.value);
+                      localStorage.setItem('meet_api_key', e.target.value);
+                    }} 
+                    style={{paddingLeft: '48px', width: '100%'}}
+                  />
+                </div>
               </div>
             </div>
           </div>
