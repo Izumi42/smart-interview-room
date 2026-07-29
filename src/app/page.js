@@ -18,6 +18,7 @@ export default function Home() {
   const [userName, setUserName] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [aiModel, setAiModel] = useState('groq');
+  const [interviewContext, setInterviewContext] = useState('');
   const [nameSubmitted, setNameSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -62,6 +63,12 @@ export default function Home() {
   // VAD (Voice Activity Detection) refs to act as a noise gate for transcription
   const localHasSpokenRef = useRef(false);
   const peerHasSpokenRef = useRef({});
+  
+  // Dynamic Silence Detection refs
+  const localSilenceTimeoutRef = useRef(null);
+  const localMaxRecordTimeoutRef = useRef(null);
+  const peerSilenceTimeoutRef = useRef({});
+  const peerMaxRecordTimeoutRef = useRef({});
 
   useEffect(() => {
     userNameRef.current = userName;
@@ -95,6 +102,11 @@ export default function Home() {
     const savedAiModel = localStorage.getItem('meet_ai_model');
     if (savedAiModel) {
       setAiModel(savedAiModel);
+    }
+    
+    const savedContext = localStorage.getItem('meet_interview_context');
+    if (savedContext) {
+      setInterviewContext(savedContext);
     }
     
     let sid = localStorage.getItem('meet_session_id');
@@ -247,6 +259,7 @@ export default function Home() {
             formData.append('file', event.data, 'chunk.webm');
             formData.append('apiKey', localStorage.getItem('meet_api_key') || '');
             formData.append('agent', localStorage.getItem('meet_ai_model') || 'groq');
+            formData.append('context', localStorage.getItem('meet_interview_context') || '');
             
             try {
               const res = await fetch('/api/transcribe', {
@@ -292,21 +305,12 @@ export default function Home() {
         try { mediaRecorder.start(); } catch(e) {}
         recognitionRef.current = mediaRecorder;
         
-        // Use an interval to stop and flush the recorder every 2500ms so it generates valid WebM headers
-        const intervalId = setInterval(() => {
-          if (recognitionRef.current === mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-          }
-        }, 2500);
-        mediaRecorder.intervalId = intervalId;
-        
-        console.log("Audio chunk recording started (Groq Whisper)");
+        console.log("Audio chunk recording started with Dynamic Silence Detection");
       } catch (err) {
         console.error("Failed to start MediaRecorder", err);
       }
     } else {
       if (recognitionRef.current) {
-        clearInterval(recognitionRef.current.intervalId);
         try { recognitionRef.current.stop(); } catch(e){}
         recognitionRef.current = null;
       }
@@ -317,7 +321,6 @@ export default function Home() {
   useEffect(() => {
     if (!inCall || !isAdmin) {
       Object.values(peerRecordersRef.current).forEach(r => { 
-        clearInterval(r.intervalId);
         try { r.stop(); } catch(e){} 
       });
       peerRecordersRef.current = {};
@@ -350,6 +353,7 @@ export default function Home() {
               formData.append('file', event.data, 'chunk.webm');
               formData.append('apiKey', apiKeyStr);
               formData.append('agent', aiModelStr);
+              formData.append('context', localStorage.getItem('meet_interview_context') || '');
               
               try {
                 const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
@@ -385,18 +389,10 @@ export default function Home() {
           try { mediaRecorder.start(); } catch(e) {}
           peerRecordersRef.current[peerId] = mediaRecorder;
           
-          const intervalId = setInterval(() => {
-            if (peerRecordersRef.current[peerId] === mediaRecorder && mediaRecorder.state === 'recording') {
-              mediaRecorder.stop();
-            }
-          }, 2500);
-          mediaRecorder.intervalId = intervalId;
-          
         } catch (err) {
           console.error("Failed to start peer MediaRecorder", err);
         }
       } else if ((!peer.stream || !peer.micOn) && peerRecordersRef.current[peerId]) {
-        clearInterval(peerRecordersRef.current[peerId].intervalId);
         try { peerRecordersRef.current[peerId].stop(); } catch(e){}
         delete peerRecordersRef.current[peerId];
       }
@@ -404,7 +400,6 @@ export default function Home() {
 
     Object.keys(peerRecordersRef.current).forEach(peerId => {
       if (!peers[peerId]) {
-        clearInterval(peerRecordersRef.current[peerId].intervalId);
         try { peerRecordersRef.current[peerId].stop(); } catch(e){}
         delete peerRecordersRef.current[peerId];
       }
@@ -480,6 +475,26 @@ export default function Home() {
             if (isSpeakingNow !== currentlySpeaking) {
               currentlySpeaking = isSpeakingNow;
               setLocalIsSpeaking(isSpeakingNow);
+              
+              if (!isSpeakingNow) {
+                 localSilenceTimeoutRef.current = setTimeout(() => {
+                    if (recognitionRef.current && recognitionRef.current.state === 'recording') {
+                       recognitionRef.current.stop();
+                    }
+                 }, 800); // 800ms of silence flushes the chunk
+                 clearTimeout(localMaxRecordTimeoutRef.current);
+                 localMaxRecordTimeoutRef.current = null;
+              } else {
+                 clearTimeout(localSilenceTimeoutRef.current);
+                 if (!localMaxRecordTimeoutRef.current) {
+                    localMaxRecordTimeoutRef.current = setTimeout(() => {
+                       if (recognitionRef.current && recognitionRef.current.state === 'recording') {
+                          recognitionRef.current.stop();
+                       }
+                       localMaxRecordTimeoutRef.current = null;
+                    }, 6000); // Force flush after 6s max
+                 }
+              }
             }
             setTimeout(checkLevel, 150);
           };
@@ -557,6 +572,24 @@ export default function Home() {
                 ...prev,
                 [targetUserId]: { ...prev[targetUserId], isSpeaking: isSpeakingNow }
               } : prev);
+              
+              if (!isSpeakingNow) {
+                 peerSilenceTimeoutRef.current[targetUserId] = setTimeout(() => {
+                    const rec = peerRecordersRef.current[targetUserId];
+                    if (rec && rec.state === 'recording') rec.stop();
+                 }, 800);
+                 clearTimeout(peerMaxRecordTimeoutRef.current[targetUserId]);
+                 peerMaxRecordTimeoutRef.current[targetUserId] = null;
+              } else {
+                 clearTimeout(peerSilenceTimeoutRef.current[targetUserId]);
+                 if (!peerMaxRecordTimeoutRef.current[targetUserId]) {
+                    peerMaxRecordTimeoutRef.current[targetUserId] = setTimeout(() => {
+                       const rec = peerRecordersRef.current[targetUserId];
+                       if (rec && rec.state === 'recording') rec.stop();
+                       peerMaxRecordTimeoutRef.current[targetUserId] = null;
+                    }, 6000);
+                 }
+              }
             }
             setTimeout(checkLevel, 150);
           };
@@ -1043,6 +1076,21 @@ export default function Home() {
                     style={{width: '100%', paddingLeft: '40px', paddingRight: '12px'}}
                   />
                 </div>
+                <label style={{display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px'}}>Interview Context / Keywords (Optional)</label>
+                <div className="input-wrapper" style={{marginBottom: '16px'}}>
+                  <FileText size={18} className="input-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="e.g. React, Frontend Developer, UI/UX" 
+                    value={interviewContext} 
+                    onChange={(e) => {
+                      setInterviewContext(e.target.value);
+                      localStorage.setItem('meet_interview_context', e.target.value);
+                    }} 
+                    style={{width: '100%', paddingLeft: '40px', paddingRight: '12px'}}
+                  />
+                </div>
+
                 <button onClick={() => setShowAiSettings(false)} className="btn-primary" style={{width: '100%', justifyContent: 'center'}}>
                   Save & Close
                 </button>
