@@ -28,6 +28,8 @@ export async function POST(req) {
       const groqFormData = new FormData();
       groqFormData.append('file', file);
       groqFormData.append('model', 'whisper-large-v3');
+      groqFormData.append('language', 'en');
+      groqFormData.append('prompt', 'Interview conversation in English. Do not include subtitles or foreign languages.');
 
       const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
         method: 'POST',
@@ -48,6 +50,8 @@ export async function POST(req) {
       const openaiFormData = new FormData();
       openaiFormData.append('file', file);
       openaiFormData.append('model', 'whisper-1');
+      openaiFormData.append('language', 'en');
+      openaiFormData.append('prompt', 'Interview conversation in English. Do not include subtitles or foreign languages.');
 
       const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
