@@ -6,7 +6,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText, VolumeX, Volume2, ChevronUp } from 'lucide-react';
+import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText, AudioLines, ChevronUp } from 'lucide-react';
 
 export default function Home() {
   const [inCall, setInCall] = useState(false);
@@ -252,7 +252,7 @@ export default function Home() {
         const audioStream = new MediaStream(localStreamRef.current.getAudioTracks());
         const dgKey = localStorage.getItem('meet_deepgram_key');
         if (dgKey) {
-          const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=false', ['token', dgKey]);
+          const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300', ['token', dgKey]);
           deepgramSocketsRef.current['local'] = socket;
 
           socket.onopen = () => {
@@ -305,7 +305,7 @@ export default function Home() {
         delete deepgramSocketsRef.current['local'];
       }
     }
-  }, [inCall, micOn, roomId, userName, isAdmin]);
+  }, [inCall, micOn, roomId, userName, isAdmin, deepgramApiKey]);
 
   // Admin transcribes everyone else's audio since candidates don't have API keys
   useEffect(() => {
@@ -334,7 +334,7 @@ export default function Home() {
 
           const dgKey = localStorage.getItem('meet_deepgram_key');
           if (dgKey) {
-            const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=false', ['token', dgKey]);
+            const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300', ['token', dgKey]);
             deepgramSocketsRef.current[peerId] = socket;
 
             socket.onopen = () => {
@@ -394,7 +394,7 @@ export default function Home() {
         }
       }
     });
-  }, [peers, inCall, isAdmin]);
+  }, [peers, inCall, isAdmin, deepgramApiKey]);
 
   useEffect(() => {
     if (inCall && localVideoRef.current && localStreamRef.current) {
@@ -1483,7 +1483,10 @@ export default function Home() {
               </div>
               
               <button className={`gm-icon-btn ${!noiseSuppressionEnabled ? 'danger' : ''}`} onClick={toggleNoiseSuppression} title="Toggle Noise Suppression (Background Noise)">
-                {noiseSuppressionEnabled ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                <div style={{position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <AudioLines size={20} />
+                  {!noiseSuppressionEnabled && <div style={{position: 'absolute', width: '24px', height: '2px', backgroundColor: 'currentColor', transform: 'rotate(-45deg)'}} />}
+                </div>
               </button>
               <button className={`gm-icon-btn ${!videoOn ? 'danger' : ''}`} onClick={() => toggleMedia('video')}>
                 {videoOn ? <VideoIcon size={20} /> : <VideoOff size={20} />}
