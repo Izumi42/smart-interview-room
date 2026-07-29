@@ -725,7 +725,7 @@ export default function Home() {
                 localStorage.setItem('meet_username', userName.trim());
               }
             }} autoComplete="off">
-              <div className="input-wrapper" style={{marginBottom: '16px', width: '100%'}}>
+              <div className="input-wrapper" style={{marginBottom: '24px', width: '100%'}}>
                 <input 
                   type="text"
                   name="participantName"
@@ -736,39 +736,6 @@ export default function Home() {
                   autoFocus
                   autoComplete="off"
                 />
-              </div>
-              <div className="input-wrapper" style={{marginBottom: '8px', width: '100%', position: 'relative'}}>
-                <Bot size={20} className="input-icon" />
-                <select 
-                  value={aiModel} 
-                  onChange={(e) => {
-                    setAiModel(e.target.value);
-                    localStorage.setItem('meet_ai_model', e.target.value);
-                  }} 
-                  style={{paddingLeft: '48px', width: '100%', height: '44px', border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', color: 'var(--gm-text)', cursor: 'pointer', appearance: 'none'}}
-                >
-                  <option value="groq">Groq (Llama-3 - Fastest)</option>
-                  <option value="openai">ChatGPT (OpenAI)</option>
-                  <option value="gemini">Gemini (Google)</option>
-                  <option value="anthropic">Claude (Anthropic)</option>
-                </select>
-                <div style={{position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--gm-text-muted)', fontSize: '12px'}}>▼</div>
-              </div>
-              <div className="input-wrapper" style={{marginBottom: '8px', width: '100%'}}>
-                <Keyboard size={20} className="input-icon" />
-                <input 
-                  type="password" 
-                  placeholder="AI API Key (Optional - Admins only)" 
-                  value={apiKey} 
-                  onChange={(e) => {
-                    setApiKey(e.target.value);
-                    localStorage.setItem('meet_api_key', e.target.value);
-                  }} 
-                  style={{paddingLeft: '48px', width: '100%'}}
-                />
-              </div>
-              <div style={{fontSize: '12px', color: 'var(--gm-text-muted)', textAlign: 'left', marginBottom: '24px', lineHeight: '1.4', background: '#f8f9fa', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e9ecef'}}>
-                <span style={{fontWeight: 600, color: 'var(--gm-primary)'}}>💡 Tip:</span> Admins can provide an API key to enable AI features. Candidates can leave it blank.
               </div>
               <button type="submit" className="btn-primary" style={{width: '100%', justifyContent: 'center'}} disabled={!userName.trim()}>
                 Continue
@@ -794,11 +761,42 @@ export default function Home() {
             </div>
             <div className="header-actions" style={{display: 'flex', alignItems: 'center', gap: '24px'}}>
               <span style={{color: 'var(--gm-text-muted)'}}>{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-              <div style={{display: 'flex', alignItems: 'center', gap: '12px', background: '#f1f3f4', padding: '4px 12px 4px 4px', borderRadius: '24px'}}>
-                <div className="video-off-avatar" style={{width: '28px', height: '28px', fontSize: '13px', background: 'var(--gm-primary)', color: 'white'}}>{userName ? userName.charAt(0).toUpperCase() : ''}</div>
-                <button onClick={() => setNameSubmitted(false)} style={{background: 'transparent', border: 'none', padding: 0, margin: 0, fontSize: '14px', fontWeight: 500, color: 'var(--gm-text)', cursor: 'pointer'}}>
-                  {userName} <span style={{color: 'var(--gm-primary)', fontSize: '12px', marginLeft: '4px'}}>(Change)</span>
-                </button>
+              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '12px', background: '#f1f3f4', padding: '4px 12px 4px 4px', borderRadius: '24px'}}>
+                  <div className="video-off-avatar" style={{width: '28px', height: '28px', fontSize: '13px', background: 'var(--gm-primary)', color: 'white'}}>{userName ? userName.charAt(0).toUpperCase() : ''}</div>
+                  <button onClick={() => setNameSubmitted(false)} style={{background: 'transparent', border: 'none', padding: 0, margin: 0, fontSize: '14px', fontWeight: 500, color: 'var(--gm-text)', cursor: 'pointer'}}>
+                    {userName} <span style={{color: 'var(--gm-primary)', fontSize: '12px', marginLeft: '4px'}}>(Change)</span>
+                  </button>
+                </div>
+                
+                {nameSubmitted && (
+                  <div style={{display: 'flex', gap: '8px', alignItems: 'center', background: 'white', padding: '4px 8px', borderRadius: '8px', border: '1px solid var(--gm-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'}}>
+                    <Bot size={14} color="var(--gm-primary)" />
+                    <select 
+                      value={aiModel} 
+                      onChange={(e) => {
+                        setAiModel(e.target.value);
+                        localStorage.setItem('meet_ai_model', e.target.value);
+                      }} 
+                      style={{border: 'none', background: 'transparent', outline: 'none', fontSize: '12px', color: 'var(--gm-text)', cursor: 'pointer', maxWidth: '80px', padding: 0}}
+                    >
+                      <option value="groq">Groq</option>
+                      <option value="openai">OpenAI</option>
+                      <option value="gemini">Gemini</option>
+                      <option value="anthropic">Claude</option>
+                    </select>
+                    <input 
+                      type="password" 
+                      placeholder="AI API Key (Optional)" 
+                      value={apiKey} 
+                      onChange={(e) => {
+                        setApiKey(e.target.value);
+                        localStorage.setItem('meet_api_key', e.target.value);
+                      }} 
+                      style={{border: 'none', borderLeft: '1px solid var(--gm-border)', paddingLeft: '8px', outline: 'none', fontSize: '12px', width: '140px'}}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </header>
