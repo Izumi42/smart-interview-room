@@ -906,11 +906,11 @@ export default function Home() {
                               line.trim() ? (
                                 <div 
                                   key={i} 
-                                  onClick={() => addQuestionToAgenda(line)}
+                                  onClick={() => addQuestionToAgenda(line.replace(/^\d+\.\s*/, '').trim())}
                                   className="suggested-question"
                                 >
                                   <Plus size={14} className="add-icon" />
-                                  <span>{line}</span>
+                                  <span>{line.replace(/^\d+\.\s*/, '').trim()}</span>
                                 </div>
                               ) : null
                             ))}
