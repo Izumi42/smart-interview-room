@@ -21,6 +21,7 @@ export default function Home() {
   const [interviewContext, setInterviewContext] = useState('');
   const [deepgramApiKey, setDeepgramApiKey] = useState('');
   const [nameSubmitted, setNameSubmitted] = useState(false);
+  const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -638,7 +639,18 @@ export default function Home() {
       try { await pc.addIceCandidate(incoming.candidate); } 
       catch (e) { console.error('Error adding received ice candidate', e); }
     }
+    }
   };
+
+  useEffect(() => {
+    if (!autoJoinAttempted && nameSubmitted && userName && roomId && !inCall) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('room') === roomId) {
+        setAutoJoinAttempted(true);
+        startCall(roomId);
+      }
+    }
+  }, [nameSubmitted, userName, roomId, autoJoinAttempted, inCall]);
 
   const toggleMedia = async (type) => {
     if (!localStreamRef.current) return;
