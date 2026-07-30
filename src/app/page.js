@@ -40,6 +40,7 @@ export default function Home() {
   const [micId, setMicId] = useState(0);
   const [showAudioMenu, setShowAudioMenu] = useState(false);
   const [isAiActive, setIsAiActive] = useState(false);
+  const [roomType, setRoomType] = useState('interview');
   const [aiQuestions, setAiQuestions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [localSocketId, setLocalSocketId] = useState('');
@@ -140,6 +141,10 @@ export default function Home() {
     const roomParam = params.get('room');
     if (roomParam) {
       setRoomId(roomParam);
+    }
+    const typeParam = params.get('type');
+    if (typeParam === 'normal' || typeParam === 'interview') {
+      setRoomType(typeParam);
     }
   }, []);
 
@@ -324,7 +329,7 @@ export default function Home() {
       try {
         const audioStream = new MediaStream(localStreamRef.current.getAudioTracks());
         const dgKey = localStorage.getItem('meet_deepgram_key');
-        if (dgKey) {
+        if (dgKey && roomType === 'interview') {
           const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300', ['token', dgKey]);
           deepgramSocketsRef.current['local'] = socket;
 
@@ -395,7 +400,7 @@ export default function Home() {
 
   // Admin transcribes everyone else's audio since candidates don't have API keys
   useEffect(() => {
-    if (!inCall || !isAdmin) {
+    if (!inCall || !isAdmin || roomType === 'normal') {
       Object.values(peerRecordersRef.current).forEach(r => { 
         try { r.stop(); } catch(e){} 
       });
@@ -988,7 +993,7 @@ export default function Home() {
 
   useEffect(() => {
     // Only analyze if user is admin, AI is active, and there are transcripts
-    if (!isAdmin || !isAiActive || transcripts.length === 0) return;
+    if (!isAdmin || !isAiActive || transcripts.length === 0 || roomType === 'normal') return;
 
     const currentText = transcripts.map(t => `${t.senderName}: ${t.text}`).join('\n');
     const lastTranscript = transcripts[transcripts.length - 1];
@@ -1226,12 +1231,37 @@ export default function Home() {
               <h1>Premium video meetings. <br/>Now free for everyone.</h1>
               <p>Secure, fast, and highly reliable video conferencing tailored for you. Connect, collaborate, and celebrate from anywhere with Meet-N-Greet.</p>
               
-              <div className="action-row">
-                <button onClick={() => startCall(Math.random().toString(36).substring(2, 9))} className="btn-primary" disabled={!userName.trim()}>
-                  <VideoIcon size={20} />
-                  New meeting
+              <div className="action-row" style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+                <button 
+                  onClick={() => {
+                    const newId = Math.random().toString(36).substring(2, 9);
+                    setRoomType('interview');
+                    window.history.pushState({}, '', `?room=${newId}&type=interview`);
+                    startCall(newId);
+                  }} 
+                  className="btn-primary" 
+                  disabled={!userName.trim()}
+                  style={{flex: 1, padding: '0 24px', whiteSpace: 'nowrap'}}
+                >
+                  <Sparkles size={20} />
+                  New Interview Room
                 </button>
-                <div className="input-wrapper">
+                <button 
+                  onClick={() => {
+                    const newId = Math.random().toString(36).substring(2, 9);
+                    setRoomType('normal');
+                    window.history.pushState({}, '', `?room=${newId}&type=normal`);
+                    startCall(newId);
+                  }} 
+                  className="btn-secondary" 
+                  disabled={!userName.trim()}
+                  style={{flex: 1, background: 'transparent', color: 'var(--gm-primary)', border: '1px solid var(--gm-primary)', height: '48px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', opacity: userName.trim() ? 1 : 0.5, whiteSpace: 'nowrap'}}
+                >
+                  <Users size={20} />
+                  New Standard Room
+                </button>
+                
+                <div className="input-wrapper" style={{flex: 2, minWidth: '250px'}}>
                   <Keyboard size={20} className="input-icon" />
                   <input 
                     type="text" 
@@ -1255,7 +1285,7 @@ export default function Home() {
       ) : (
         <div className="call-layout">
           <div className="call-main">
-            {inCall && isAdmin && !liveTranscriptOpen && (
+            {inCall && isAdmin && !liveTranscriptOpen && roomType === 'interview' && (
               <button 
                 onClick={() => setLiveTranscriptOpen(true)}
                 style={{
@@ -1558,7 +1588,7 @@ export default function Home() {
                       className="btn-primary" 
                       style={{width: '100%', justifyContent: 'center', background: '#e8f0fe', color: 'var(--gm-primary)', boxShadow: 'none'}}
                       onClick={() => {
-                        const url = window.location.origin + '/?room=' + roomId;
+                        const url = window.location.origin + '/?room=' + roomId + '&type=' + roomType;
                         navigator.clipboard.writeText(url);
                         const btn = document.getElementById('copy-btn-text');
                         if (btn) {
@@ -1645,7 +1675,7 @@ export default function Home() {
             </div>
 
             <div className="bar-right">
-              {isAdmin && (
+              {isAdmin && roomType === 'interview' && (
                 <button className={`gm-icon-btn ghost ${aiSidebarOpen ? 'active' : ''}`} onClick={toggleAiSidebar} title="AI Interview Assistant">
                   <Bot size={20} />
                 </button>
