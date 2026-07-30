@@ -1256,7 +1256,7 @@ export default function Home() {
                     }} 
                     className="btn-secondary" 
                     disabled={!userName.trim()}
-                    style={{flex: 1, background: 'white', color: 'var(--gm-primary)', border: '1px solid var(--gm-primary)', height: '48px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', opacity: userName.trim() ? 1 : 0.5, whiteSpace: 'nowrap'}}
+                    style={{flex: 1, background: 'white', color: 'var(--gm-primary)', border: '1px solid var(--gm-primary)', height: '48px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', opacity: userName.trim() ? 1 : 0.5, whiteSpace: 'nowrap'}}
                   >
                     <Users size={20} />
                     New Standard Room
