@@ -639,7 +639,6 @@ export default function Home() {
       try { await pc.addIceCandidate(incoming.candidate); } 
       catch (e) { console.error('Error adding received ice candidate', e); }
     }
-    }
   };
 
   useEffect(() => {
