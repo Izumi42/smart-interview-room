@@ -23,6 +23,7 @@ export default function Home() {
   const [nameSubmitted, setNameSubmitted] = useState(false);
   const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
@@ -124,6 +125,8 @@ export default function Home() {
     if (savedDeepgramKey) {
       setDeepgramApiKey(savedDeepgramKey);
     }
+    
+    setIsMounted(true);
     
     let sid = localStorage.getItem('meet_session_id');
     if (!sid) {
@@ -1069,7 +1072,7 @@ export default function Home() {
 
   return (
     <div className="app-container">
-      {!nameSubmitted && (
+      {isMounted && !nameSubmitted && (
         <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
           <div style={{background: 'white', padding: '32px', borderRadius: '12px', boxShadow: '0 16px 48px rgba(0,0,0,0.2)', textAlign: 'center', maxWidth: '420px', width: '90%'}}>
             <h2 style={{marginBottom: '8px', fontSize: '20px', fontWeight: 500, color: 'var(--gm-text)'}}>Welcome</h2>
