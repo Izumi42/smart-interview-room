@@ -1238,11 +1238,13 @@ export default function Home() {
                     onClick={() => setShowRoomTypeMenu(!showRoomTypeMenu)} 
                     className="btn-primary" 
                     disabled={!userName.trim()}
-                    style={{display: 'flex', alignItems: 'center', gap: '8px', width: '260px', height: '48px', padding: '0 16px 0 24px', boxSizing: 'border-box', justifyContent: 'center'}}
+                    style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '260px', height: '48px', padding: '0 16px', boxSizing: 'border-box'}}
                   >
-                    <VideoIcon size={20} />
-                    New meeting
-                    <ChevronDown size={18} style={{marginLeft: '2px'}} />
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                      <VideoIcon size={20} />
+                      New meeting
+                    </div>
+                    <ChevronDown size={18} />
                   </button>
                   {showRoomTypeMenu && (
                     <div style={{
