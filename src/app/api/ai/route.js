@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { transcript, type, agendaItems, agent, apiKey } = await req.json();
+    const { transcript, type, agendaItems, agent, apiKey, resumeText, jobDescription } = await req.json();
 
     if (!transcript) {
       return NextResponse.json({ error: 'No transcript provided' }, { status: 400 });
@@ -19,7 +19,11 @@ export async function POST(req) {
       prompt = `You are an expert technical interviewer's assistant. Based on the following interview transcript, review the pending agenda items. IMPORTANT: An agenda item should ONLY be considered addressed if the CANDIDATE provides an answer or explanation related to it. If only the Interviewer mentions it, or if it is just being asked, DO NOT check it off. If the candidate has sufficiently answered any of the agenda items, return a JSON array containing the IDs of those items. Return ONLY a valid JSON array of strings (e.g., ["id1", "id2"]). Return an empty array [] if none have been addressed.\n\nPending Agenda Items:\n${JSON.stringify(agendaItems)}\n\nTranscript:\n${transcript}`;
       responseFormat = 'application/json';
     } else {
-      prompt = `You are an expert technical interview co-pilot. You are listening to a live transcript of an ongoing interview.\n\nAnalyze the candidate's answers and provide UP TO 3 highly relevant and insightful follow-up questions for the interviewer to ask the candidate. Keep them concise and challenging but fair.\n\nCRITICAL RULE 1: You must ONLY generate follow-ups based on the CANDIDATE's statements. If the most recent statements in the transcript are from the Interviewer (or if the candidate hasn't spoken yet), do NOT suggest follow-up questions. Only analyze and respond to what the Candidate says.\n\nCRITICAL RULE 2: If the transcript is only introductory greetings, lacks technical substance, or if you cannot generate questions based on Rule 1, you MUST output EXACTLY the phrase: "Waiting for candidate to speak..." and NOTHING ELSE. Do not apologize or explain.\n\nCRITICAL RULE 3: If you DO generate questions, output ONLY the questions, each on a new line. Do NOT include any introductory text, conversational filler, or ending text. Just the raw, direct questions. Start each question with a number.\n\nTranscript so far:\n${transcript}`;
+      let contextStr = '';
+      if (resumeText) contextStr += `Candidate Resume/Background:\n${resumeText}\n\n`;
+      if (jobDescription) contextStr += `Job Description/Role:\n${jobDescription}\n\n`;
+      
+      prompt = `You are an expert technical interview co-pilot. You are listening to a live transcript of an ongoing interview.\n\n${contextStr}Analyze the candidate's answers and provide UP TO 3 highly relevant and insightful follow-up questions for the interviewer to ask the candidate. Keep them concise and challenging but fair.\n\nCRITICAL RULE 1: You must ONLY generate follow-ups based on the CANDIDATE's statements. If the most recent statements in the transcript are from the Interviewer (or if the candidate hasn't spoken yet), do NOT suggest follow-up questions. Only analyze and respond to what the Candidate says.\n\nCRITICAL RULE 2: If the transcript is only introductory greetings, lacks technical substance, or if you cannot generate questions based on Rule 1, you MUST output EXACTLY the phrase: "Waiting for candidate to speak..." and NOTHING ELSE. Do not apologize or explain.\n\nCRITICAL RULE 3: If you DO generate questions, output ONLY the questions, each on a new line. Do NOT include any introductory text, conversational filler, or ending text. Just the raw, direct questions. Start each question with a number.\n\nTranscript so far:\n${transcript}`;
     }
 
     let targetAgent = agent || 'groq';
