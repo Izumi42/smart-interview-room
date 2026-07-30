@@ -6,7 +6,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText, AudioLines, ChevronUp, Play, Square } from 'lucide-react';
+import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText, AudioLines, ChevronUp, ChevronDown, Play, Square } from 'lucide-react';
 
 export default function Home() {
   const [inCall, setInCall] = useState(false);
@@ -1238,9 +1238,11 @@ export default function Home() {
                     onClick={() => setShowRoomTypeMenu(!showRoomTypeMenu)} 
                     className="btn-primary" 
                     disabled={!userName.trim()}
+                    style={{display: 'flex', alignItems: 'center', gap: '8px', height: '48px', padding: '0 16px 0 24px'}}
                   >
                     <VideoIcon size={20} />
                     New meeting
+                    <ChevronDown size={18} style={{marginLeft: '2px'}} />
                   </button>
                   {showRoomTypeMenu && (
                     <div style={{
@@ -1288,7 +1290,7 @@ export default function Home() {
                   )}
                 </div>
                 
-                <div className="input-wrapper" style={{width: '280px'}}>
+                <div className="input-wrapper" style={{width: '280px', height: '48px', margin: 0}}>
                   <Keyboard size={20} className="input-icon" />
                   <input 
                     type="text" 
