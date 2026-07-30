@@ -252,10 +252,14 @@ export default function Home() {
         const audioStream = new MediaStream(localStreamRef.current.getAudioTracks());
         const dgKey = localStorage.getItem('meet_deepgram_key');
         if (dgKey) {
-          const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300&keepalive=true', ['token', dgKey]);
+          const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300', ['token', dgKey]);
           deepgramSocketsRef.current['local'] = socket;
 
+          let keepAliveInterval;
           socket.onopen = () => {
+            keepAliveInterval = setInterval(() => {
+              if (socket.readyState === 1) socket.send(JSON.stringify({ type: "KeepAlive" }));
+            }, 8000);
             const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : {};
             const mediaRecorder = new MediaRecorder(audioStream, options);
             recognitionRef.current = mediaRecorder;
@@ -288,7 +292,13 @@ export default function Home() {
             } catch(e) {}
           };
           
-          socket.onerror = (e) => console.error("Deepgram local error", e);
+          socket.onerror = (e) => {
+            clearInterval(keepAliveInterval);
+            console.error("Deepgram local error", e);
+          };
+          socket.onclose = () => {
+            clearInterval(keepAliveInterval);
+          };
         } else {
           console.warn("Deepgram API Key not set. Local transcription is disabled.");
         }
@@ -334,10 +344,14 @@ export default function Home() {
 
           const dgKey = localStorage.getItem('meet_deepgram_key');
           if (dgKey) {
-            const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300&keepalive=true', ['token', dgKey]);
+            const socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&utterance_end_ms=1000&endpointing=300', ['token', dgKey]);
             deepgramSocketsRef.current[peerId] = socket;
 
+            let keepAliveInterval;
             socket.onopen = () => {
+              keepAliveInterval = setInterval(() => {
+                if (socket.readyState === 1) socket.send(JSON.stringify({ type: "KeepAlive" }));
+              }, 8000);
               const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? { mimeType: 'audio/webm;codecs=opus' } : {};
               const mediaRecorder = new MediaRecorder(audioStream, options);
               peerRecordersRef.current[peerId] = mediaRecorder;
@@ -370,7 +384,12 @@ export default function Home() {
               } catch(e) {}
             };
           }
-          
+            socket.onerror = (e) => {
+              clearInterval(keepAliveInterval);
+            };
+            socket.onclose = () => {
+              clearInterval(keepAliveInterval);
+            };
         } catch (err) {
           console.error("Failed to start peer MediaRecorder", err);
         }
