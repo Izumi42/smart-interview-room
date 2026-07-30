@@ -62,6 +62,7 @@ export default function Home() {
   const lastAnalyzedText = useRef('');
   const userNameRef = useRef(userName);
   const isGeneratingRef = useRef(false);
+  const interimTranscriptRef = useRef('');
   const audioCtxRef = useRef(null);
 
   // VAD (Voice Activity Detection) refs to act as a noise gate for transcription
@@ -81,6 +82,10 @@ export default function Home() {
   useEffect(() => {
     agendaItemsRef.current = agendaItems;
   }, [agendaItems]);
+
+  useEffect(() => {
+    interimTranscriptRef.current = interimTranscript;
+  }, [interimTranscript]);
 
   useEffect(() => {
     // If the user has configured an API key, they are the interviewer (Admin)
@@ -706,6 +711,20 @@ export default function Home() {
         // Turning OFF: stop the hardware track
         const track = localStreamRef.current.getAudioTracks()[0];
         if (track) track.stop();
+        
+        if (interimTranscriptRef.current && socketRef.current) {
+          socketRef.current.emit('transcript', {
+            id: Math.random().toString(36).substring(2, 11),
+            roomId,
+            text: interimTranscriptRef.current,
+            senderId: socketRef.current.id,
+            senderName: userNameRef.current + (isAdmin ? ' (Interviewer)' : ' (Candidate)'),
+            isFinal: true,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            unix: Date.now()
+          });
+          interimTranscriptRef.current = '';
+        }
         
         setMicOn(false);
         setInterimTranscript('');
