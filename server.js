@@ -108,6 +108,10 @@ app.prepare().then(() => {
       io.to(payload.roomId).emit('transcript', payload);
     });
 
+    socket.on('interim-transcript', (payload) => {
+      io.to(payload.roomId).emit('interim-transcript', payload);
+    });
+
     // DB Persistence for Agenda & Scorecards
     socket.on('add-agenda', (payload) => {
       // payload: { id, roomId, text, done }
