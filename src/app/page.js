@@ -1467,7 +1467,7 @@ export default function Home() {
                     <h4 style={{fontSize: '16px', fontWeight: 500, marginBottom: '16px'}}>Joining Info</h4>
                     <div style={{background: '#f1f3f4', padding: '16px', borderRadius: '8px', marginBottom: '24px'}}>
                       <p style={{fontSize: '13px', color: 'var(--gm-text-muted)', marginBottom: '4px'}}>Meeting link or code</p>
-                      <div style={{fontSize: '16px', fontWeight: 500, userSelect: 'all', wordBreak: 'break-all'}}>{roomId}</div>
+                      <div style={{fontSize: '16px', fontWeight: 500, userSelect: 'all', wordBreak: 'break-all'}}>{typeof window !== 'undefined' ? `${window.location.origin}/?room=${roomId}` : roomId}</div>
                     </div>
                     <button 
                       className="btn-primary" 
