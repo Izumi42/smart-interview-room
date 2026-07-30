@@ -1238,7 +1238,7 @@ export default function Home() {
                     onClick={() => setShowRoomTypeMenu(!showRoomTypeMenu)} 
                     className="btn-primary" 
                     disabled={!userName.trim()}
-                    style={{display: 'flex', alignItems: 'center', gap: '8px', width: '200px', height: '48px', padding: '0 16px 0 24px', boxSizing: 'border-box'}}
+                    style={{display: 'flex', alignItems: 'center', gap: '8px', width: '260px', height: '48px', padding: '0 16px 0 24px', boxSizing: 'border-box', justifyContent: 'center'}}
                   >
                     <VideoIcon size={20} />
                     New meeting
@@ -1290,7 +1290,7 @@ export default function Home() {
                   )}
                 </div>
                 
-                <div className="input-wrapper" style={{height: '48px', margin: 0}}>
+                <div className="input-wrapper" style={{height: '48px', margin: 0, position: 'relative'}}>
                   <Keyboard size={20} className="input-icon" />
                   <input 
                     type="text" 
@@ -1298,16 +1298,17 @@ export default function Home() {
                     value={roomId} 
                     onChange={(e) => setRoomId(e.target.value)} 
                     onKeyDown={(e) => e.key === 'Enter' && userName.trim() && startCall()}
-                    style={{width: '200px', boxSizing: 'border-box'}}
+                    style={{width: '260px', height: '100%', boxSizing: 'border-box', paddingRight: '64px'}}
                   />
+                  <button 
+                    onClick={() => startCall()} 
+                    className="btn-text" 
+                    disabled={!roomId.trim() || !userName.trim()}
+                    style={{position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)', padding: '4px 12px', margin: 0, height: '40px'}}
+                  >
+                    Join
+                  </button>
                 </div>
-                <button 
-                  onClick={() => startCall()} 
-                  className="btn-text" 
-                  disabled={!roomId.trim() || !userName.trim()}
-                >
-                  Join
-                </button>
               </div>
             </div>
           </div>
