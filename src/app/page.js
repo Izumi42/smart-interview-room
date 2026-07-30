@@ -41,6 +41,7 @@ export default function Home() {
   const [showAudioMenu, setShowAudioMenu] = useState(false);
   const [isAiActive, setIsAiActive] = useState(false);
   const [roomType, setRoomType] = useState('interview');
+  const [showRoomTypeMenu, setShowRoomTypeMenu] = useState(false);
   const [aiQuestions, setAiQuestions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [localSocketId, setLocalSocketId] = useState('');
@@ -1231,57 +1232,79 @@ export default function Home() {
               <h1>Premium video meetings. <br/>Now free for everyone.</h1>
               <p>Secure, fast, and highly reliable video conferencing tailored for you. Connect, collaborate, and celebrate from anywhere with Meet-N-Greet.</p>
               
-              <div style={{display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px', width: '100%'}}>
-                <div style={{display: 'flex', gap: '12px'}}>
+              <div className="action-row" style={{display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center'}}>
+                <div style={{position: 'relative'}}>
                   <button 
-                    onClick={() => {
-                      const newId = Math.random().toString(36).substring(2, 9);
-                      setRoomType('interview');
-                      window.history.pushState({}, '', `?room=${newId}&type=interview`);
-                      startCall(newId);
-                    }} 
+                    onClick={() => setShowRoomTypeMenu(!showRoomTypeMenu)} 
                     className="btn-primary" 
                     disabled={!userName.trim()}
-                    style={{flex: 1, padding: '0 24px', whiteSpace: 'nowrap', justifyContent: 'center'}}
                   >
-                    <Sparkles size={20} />
-                    New Interview Room
+                    <VideoIcon size={20} />
+                    New meeting
                   </button>
-                  <button 
-                    onClick={() => {
-                      const newId = Math.random().toString(36).substring(2, 9);
-                      setRoomType('normal');
-                      window.history.pushState({}, '', `?room=${newId}&type=normal`);
-                      startCall(newId);
-                    }} 
-                    className="btn-secondary" 
-                    disabled={!userName.trim()}
-                    style={{flex: 1, background: 'white', color: 'var(--gm-primary)', border: '1px solid var(--gm-primary)', height: '48px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', opacity: userName.trim() ? 1 : 0.5, whiteSpace: 'nowrap'}}
-                  >
-                    <Users size={20} />
-                    New Standard Room
-                  </button>
+                  {showRoomTypeMenu && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, marginTop: '8px', width: '250px', 
+                      background: 'white', border: '1px solid var(--gm-border)', borderRadius: '8px', 
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, overflow: 'hidden'
+                    }}>
+                      <button 
+                        onClick={() => {
+                          const newId = Math.random().toString(36).substring(2, 9);
+                          setRoomType('interview');
+                          window.history.pushState({}, '', `?room=${newId}&type=interview`);
+                          startCall(newId);
+                        }} 
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', 
+                          background: 'transparent', border: 'none', borderBottom: '1px solid #f1f3f4', cursor: 'pointer', 
+                          textAlign: 'left', fontSize: '14px', fontWeight: 500, color: 'var(--gm-text)'
+                        }} 
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8f9fa'} 
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Sparkles size={18} color="var(--gm-primary)" />
+                        Create Interview Room
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const newId = Math.random().toString(36).substring(2, 9);
+                          setRoomType('normal');
+                          window.history.pushState({}, '', `?room=${newId}&type=normal`);
+                          startCall(newId);
+                        }} 
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', 
+                          background: 'transparent', border: 'none', cursor: 'pointer', 
+                          textAlign: 'left', fontSize: '14px', fontWeight: 500, color: 'var(--gm-text)'
+                        }} 
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8f9fa'} 
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Users size={18} color="var(--gm-text-muted)" />
+                        Create Standard Room
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
-                <div style={{display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center'}}>
-                  <div className="input-wrapper" style={{width: '280px'}}>
-                    <Keyboard size={20} className="input-icon" />
-                    <input 
-                      type="text" 
-                      placeholder="Enter a code or link" 
-                      value={roomId} 
-                      onChange={(e) => setRoomId(e.target.value)} 
-                      onKeyDown={(e) => e.key === 'Enter' && userName.trim() && startCall()}
-                    />
-                  </div>
-                  <button 
-                    onClick={() => startCall()} 
-                    className="btn-text" 
-                    disabled={!roomId.trim() || !userName.trim()}
-                  >
-                    Join
-                  </button>
+                <div className="input-wrapper" style={{width: '280px'}}>
+                  <Keyboard size={20} className="input-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Enter a code or link" 
+                    value={roomId} 
+                    onChange={(e) => setRoomId(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && userName.trim() && startCall()}
+                  />
                 </div>
+                <button 
+                  onClick={() => startCall()} 
+                  className="btn-text" 
+                  disabled={!roomId.trim() || !userName.trim()}
+                >
+                  Join
+                </button>
               </div>
             </div>
           </div>
