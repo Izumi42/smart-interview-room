@@ -1238,7 +1238,7 @@ export default function Home() {
                     onClick={() => setShowRoomTypeMenu(!showRoomTypeMenu)} 
                     className="btn-primary" 
                     disabled={!userName.trim()}
-                    style={{display: 'flex', alignItems: 'center', gap: '8px', height: '48px', padding: '0 16px 0 24px'}}
+                    style={{display: 'flex', alignItems: 'center', gap: '8px', width: '200px', height: '48px', padding: '0 16px 0 24px', boxSizing: 'border-box'}}
                   >
                     <VideoIcon size={20} />
                     New meeting
@@ -1298,6 +1298,7 @@ export default function Home() {
                     value={roomId} 
                     onChange={(e) => setRoomId(e.target.value)} 
                     onKeyDown={(e) => e.key === 'Enter' && userName.trim() && startCall()}
+                    style={{width: '200px', boxSizing: 'border-box'}}
                   />
                 </div>
                 <button 
