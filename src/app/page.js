@@ -36,6 +36,7 @@ export default function Home() {
   const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
   const [audioDevices, setAudioDevices] = useState([]);
   const [selectedAudioDevice, setSelectedAudioDevice] = useState('');
+  const [micId, setMicId] = useState(0);
   const [showAudioMenu, setShowAudioMenu] = useState(false);
   const [aiQuestions, setAiQuestions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -196,7 +197,7 @@ export default function Home() {
         el.style.boxShadow = 'none';
       }
     };
-  }, [micOn]);
+  }, [micOn, micId]);
 
   useEffect(() => {
     socketRef.current = io(); 
@@ -312,7 +313,6 @@ export default function Home() {
     };
   }, []);
 
-  // Server-side transcription using Groq Whisper (Cross-Browser)
   useEffect(() => {
     if (inCall && micOn && localStreamRef.current) {
       if (recognitionRef.current) return; // Reuse the ref for MediaRecorder
@@ -387,7 +387,7 @@ export default function Home() {
         delete deepgramSocketsRef.current['local'];
       }
     }
-  }, [inCall, micOn, roomId, userName, isAdmin, deepgramApiKey]);
+  }, [inCall, micOn, micId, roomId, userName, isAdmin, deepgramApiKey]);
 
   // Admin transcribes everyone else's audio since candidates don't have API keys
   useEffect(() => {
@@ -528,7 +528,7 @@ export default function Home() {
       // Wait for a smooth loading animation delay
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      stream.getAudioTracks().forEach(track => track.stop()); // Stop the hardware track so the mic goes fully off
+      stream.getAudioTracks().forEach(track => track.enabled = false);
       stream.getVideoTracks().forEach(track => track.stop()); // Stop the hardware track so the camera light turns off
       setMicOn(false);
       setVideoOn(false);
@@ -720,12 +720,9 @@ export default function Home() {
         }
       }
     } else {
-      if (micOn) {
-        // Turning OFF: stop the hardware track
-        const track = localStreamRef.current.getAudioTracks()[0];
-        if (track) track.stop();
-        
-        if (interimTranscriptRef.current && socketRef.current) {
+      const track = localStreamRef.current.getAudioTracks()[0];
+      if (track) {
+        if (micOn && interimTranscriptRef.current && socketRef.current) {
           socketRef.current.emit('transcript', {
             id: Math.random().toString(36).substring(2, 11),
             roomId,
@@ -739,37 +736,12 @@ export default function Home() {
           interimTranscriptRef.current = '';
         }
         
-        setMicOn(false);
-        setInterimTranscript('');
-        socketRef.current.emit('toggle-media', { roomId, userId: socketRef.current.id, type, isEnabled: false });
-      } else {
-        // Turning ON: request a new hardware track and replace it in peer connections
-        try {
-          const newStream = await navigator.mediaDevices.getUserMedia({ audio: { 
-            noiseSuppression: noiseSuppressionEnabled, 
-            echoCancellation: true, 
-            autoGainControl: true 
-          } });
-          const newTrack = newStream.getAudioTracks()[0];
-          
-          const oldTrack = localStreamRef.current.getAudioTracks()[0];
-          if (oldTrack) {
-            oldTrack.stop();
-            localStreamRef.current.removeTrack(oldTrack);
-          }
-          localStreamRef.current.addTrack(newTrack);
-          
-          Object.values(peerConnectionsRef.current).forEach(pc => {
-            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
-            if (sender) sender.replaceTrack(newTrack);
-          });
-          
-          setMicOn(true);
-          socketRef.current.emit('toggle-media', { roomId, userId: socketRef.current.id, type, isEnabled: true });
-        } catch (err) {
-          console.error("Failed to restart microphone", err);
-          alert("Could not access microphone. Please check permissions.");
+        track.enabled = !track.enabled;
+        setMicOn(track.enabled);
+        if (!track.enabled) {
+          setInterimTranscript('');
         }
+        socketRef.current.emit('toggle-media', { roomId, userId: socketRef.current.id, type, isEnabled: track.enabled });
       }
     }
   };
@@ -854,6 +826,7 @@ export default function Home() {
       
       localStreamRef.current.removeTrack(oldAudioTrack);
       localStreamRef.current.addTrack(newAudioTrack);
+      setMicId(prev => prev + 1); // Trigger Deepgram restart for the new track
       
       Object.values(peerConnectionsRef.current).forEach(pc => {
         const sender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
