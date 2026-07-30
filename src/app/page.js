@@ -32,6 +32,7 @@ export default function Home() {
   const [transcriptError, setTranscriptError] = useState('');
   const [messages, setMessages] = useState([]);
   const [transcripts, setTranscripts] = useState([]);
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = useState(true);
   const [audioDevices, setAudioDevices] = useState([]);
   const [selectedAudioDevice, setSelectedAudioDevice] = useState('');
@@ -51,6 +52,7 @@ export default function Home() {
   const peerConnectionsRef = useRef({});
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const transcriptsEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const peerRecordersRef = useRef({});
   const deepgramSocketsRef = useRef({});
@@ -182,7 +184,12 @@ export default function Home() {
       setMessages(prev => [...prev, payload]);
     });
 
+    socket.on('interim-transcript', (payload) => {
+      setInterimTranscript(payload.text);
+    });
+
     socket.on('transcript', (payload) => {
+      setInterimTranscript('');
       setTranscripts(prev => {
         const existingIdx = prev.findIndex(t => t.id && t.id === payload.id);
         if (existingIdx >= 0) {
@@ -288,6 +295,8 @@ export default function Home() {
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
                     unix: Date.now() 
                   });
+                } else if (transcriptStr) {
+                  socketRef.current.emit('interim-transcript', { roomId, text: transcriptStr });
                 }
               }
             } catch(e) {}
@@ -425,6 +434,10 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, chatOpen]);
+
+  useEffect(() => {
+    transcriptsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [transcripts, interimTranscript, liveTranscriptOpen]);
 
   const startCall = async (idToJoin) => {
     const finalRoomId = typeof idToJoin === 'string' ? idToJoin : roomId;
@@ -1264,18 +1277,31 @@ export default function Home() {
                       <b>API Error:</b> {transcriptError}
                     </div>
                   )}
-                  {transcripts.length === 0 ? (
+                  {transcripts.length === 0 && !interimTranscript ? (
                     <p style={{fontSize: '13px', color: 'var(--gm-text-muted)', textAlign: 'center', marginTop: '20px', fontStyle: 'italic'}}>No conversation detected yet. Make sure your microphone is unmuted and you are speaking clearly.</p>
                   ) : (
-                    transcripts.map((t, i) => (
-                      <div key={i} style={{background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e9ecef', boxShadow: '0 1px 2px rgba(0,0,0,0.02)'}}>
-                        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center'}}>
-                          <span style={{fontSize: '12px', fontWeight: 600, color: t.senderName.includes('(Interviewer)') ? 'var(--gm-primary)' : '#0f9d58'}}>{t.senderName}</span>
-                          <span style={{fontSize: '11px', color: 'var(--gm-text-muted)'}}>{t.timestamp}</span>
+                    <>
+                      {transcripts.map((t, i) => (
+                        <div key={i} style={{background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e9ecef', boxShadow: '0 1px 2px rgba(0,0,0,0.02)'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center'}}>
+                            <span style={{fontSize: '12px', fontWeight: 600, color: t.senderName.includes('(Interviewer)') ? 'var(--gm-primary)' : '#0f9d58'}}>{t.senderName}</span>
+                            <span style={{fontSize: '11px', color: 'var(--gm-text-muted)'}}>{t.timestamp}</span>
+                          </div>
+                          <p style={{margin: 0, fontSize: '14px', color: 'var(--gm-text)', lineHeight: '1.5'}}>{t.text}</p>
                         </div>
-                        <p style={{margin: 0, fontSize: '14px', color: 'var(--gm-text)', lineHeight: '1.5'}}>{t.text}</p>
-                      </div>
-                    ))
+                      ))}
+                      {interimTranscript && (
+                        <div style={{marginBottom: '16px', display: 'flex', flexDirection: 'column', opacity: 0.7}}>
+                          <span style={{fontSize: '12px', fontWeight: 600, color: 'var(--gm-text-muted)', marginBottom: '4px'}}>
+                            Hearing...
+                          </span>
+                          <div style={{background: 'white', padding: '12px', borderRadius: '8px', fontSize: '14px', lineHeight: '1.5', color: 'var(--gm-text)', border: '1px solid #e9ecef', fontStyle: 'italic'}}>
+                            {interimTranscript}
+                          </div>
+                        </div>
+                      )}
+                      <div ref={transcriptsEndRef} />
+                    </>
                   )}
                 </div>
               </div>
