@@ -1231,53 +1231,57 @@ export default function Home() {
               <h1>Premium video meetings. <br/>Now free for everyone.</h1>
               <p>Secure, fast, and highly reliable video conferencing tailored for you. Connect, collaborate, and celebrate from anywhere with Meet-N-Greet.</p>
               
-              <div className="action-row" style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
-                <button 
-                  onClick={() => {
-                    const newId = Math.random().toString(36).substring(2, 9);
-                    setRoomType('interview');
-                    window.history.pushState({}, '', `?room=${newId}&type=interview`);
-                    startCall(newId);
-                  }} 
-                  className="btn-primary" 
-                  disabled={!userName.trim()}
-                  style={{flex: 1, padding: '0 24px', whiteSpace: 'nowrap'}}
-                >
-                  <Sparkles size={20} />
-                  New Interview Room
-                </button>
-                <button 
-                  onClick={() => {
-                    const newId = Math.random().toString(36).substring(2, 9);
-                    setRoomType('normal');
-                    window.history.pushState({}, '', `?room=${newId}&type=normal`);
-                    startCall(newId);
-                  }} 
-                  className="btn-secondary" 
-                  disabled={!userName.trim()}
-                  style={{flex: 1, background: 'transparent', color: 'var(--gm-primary)', border: '1px solid var(--gm-primary)', height: '48px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', opacity: userName.trim() ? 1 : 0.5, whiteSpace: 'nowrap'}}
-                >
-                  <Users size={20} />
-                  New Standard Room
-                </button>
-                
-                <div className="input-wrapper" style={{flex: 2, minWidth: '250px'}}>
-                  <Keyboard size={20} className="input-icon" />
-                  <input 
-                    type="text" 
-                    placeholder="Enter a code or link" 
-                    value={roomId} 
-                    onChange={(e) => setRoomId(e.target.value)} 
-                    onKeyDown={(e) => e.key === 'Enter' && userName.trim() && startCall()}
-                  />
+              <div style={{display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px', width: '100%'}}>
+                <div style={{display: 'flex', gap: '12px'}}>
+                  <button 
+                    onClick={() => {
+                      const newId = Math.random().toString(36).substring(2, 9);
+                      setRoomType('interview');
+                      window.history.pushState({}, '', `?room=${newId}&type=interview`);
+                      startCall(newId);
+                    }} 
+                    className="btn-primary" 
+                    disabled={!userName.trim()}
+                    style={{flex: 1, padding: '0 24px', whiteSpace: 'nowrap', justifyContent: 'center'}}
+                  >
+                    <Sparkles size={20} />
+                    New Interview Room
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const newId = Math.random().toString(36).substring(2, 9);
+                      setRoomType('normal');
+                      window.history.pushState({}, '', `?room=${newId}&type=normal`);
+                      startCall(newId);
+                    }} 
+                    className="btn-secondary" 
+                    disabled={!userName.trim()}
+                    style={{flex: 1, background: 'white', color: 'var(--gm-primary)', border: '1px solid var(--gm-primary)', height: '48px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', opacity: userName.trim() ? 1 : 0.5, whiteSpace: 'nowrap'}}
+                  >
+                    <Users size={20} />
+                    New Standard Room
+                  </button>
                 </div>
-                <button 
-                  onClick={() => startCall()} 
-                  className="btn-text" 
-                  disabled={!roomId.trim() || !userName.trim()}
-                >
-                  Join
-                </button>
+                
+                <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                  <div className="input-wrapper" style={{flex: 1}}>
+                    <Keyboard size={20} className="input-icon" />
+                    <input 
+                      type="text" 
+                      placeholder="Enter a code or link" 
+                      value={roomId} 
+                      onChange={(e) => setRoomId(e.target.value)} 
+                      onKeyDown={(e) => e.key === 'Enter' && userName.trim() && startCall()}
+                    />
+                  </div>
+                  <button 
+                    onClick={() => startCall()} 
+                    className="btn-text" 
+                    disabled={!roomId.trim() || !userName.trim()}
+                  >
+                    Join
+                  </button>
+                </div>
               </div>
             </div>
           </div>
