@@ -38,7 +38,6 @@ export default function Home() {
   const [audioDevices, setAudioDevices] = useState([]);
   const [selectedAudioDevice, setSelectedAudioDevice] = useState('');
   const [micId, setMicId] = useState(0);
-  const [micSensitivity, setMicSensitivity] = useState(70);
   const [showAudioMenu, setShowAudioMenu] = useState(false);
   const [aiQuestions, setAiQuestions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -174,8 +173,7 @@ export default function Home() {
             let sum = 0;
             for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
             const average = sum / dataArray.length;
-            const threshold = 105 - micSensitivity;
-            const isSpeakingNow = average > threshold;
+            const isSpeakingNow = average > 50;
             
             if (isSpeakingNow !== currentlySpeaking) {
               currentlySpeaking = isSpeakingNow;
@@ -202,7 +200,7 @@ export default function Home() {
         el.style.boxShadow = 'none';
       }
     };
-  }, [micOn, micId, micSensitivity]);
+  }, [micOn, micId]);
 
   useEffect(() => {
     socketRef.current = io(); 
@@ -1602,21 +1600,6 @@ export default function Home() {
                         </span>
                       </div>
                     ))}
-                    <div style={{padding: '8px 16px', marginTop: '4px', borderTop: '1px solid rgba(255,255,255,0.1)'}}>
-                      <div style={{fontSize: '11px', fontWeight: 600, color: '#9aa0a6', letterSpacing: '0.5px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between'}}>
-                        <span>SENSITIVITY</span>
-                        <span>{micSensitivity}%</span>
-                      </div>
-                      <input 
-                        type="range" 
-                        min="1" 
-                        max="100" 
-                        value={micSensitivity} 
-                        onChange={(e) => setMicSensitivity(Number(e.target.value))} 
-                        style={{width: '100%', cursor: 'pointer'}} 
-                        title="Adjust Voice Activity Detection Sensitivity"
-                      />
-                    </div>
                   </div>
                 )}
               </div>
