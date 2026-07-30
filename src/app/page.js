@@ -1263,8 +1263,8 @@ export default function Home() {
                   </button>
                 </div>
                 
-                <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-                  <div className="input-wrapper" style={{flex: 1}}>
+                <div style={{display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center'}}>
+                  <div className="input-wrapper" style={{width: '280px'}}>
                     <Keyboard size={20} className="input-icon" />
                     <input 
                       type="text" 
@@ -1272,7 +1272,6 @@ export default function Home() {
                       value={roomId} 
                       onChange={(e) => setRoomId(e.target.value)} 
                       onKeyDown={(e) => e.key === 'Enter' && userName.trim() && startCall()}
-                      style={{width: '100%'}}
                     />
                   </div>
                   <button 
