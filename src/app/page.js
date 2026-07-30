@@ -143,6 +143,62 @@ export default function Home() {
   }, [transcripts]);
 
   useEffect(() => {
+    let checkInterval;
+    let source;
+    
+    if (micOn && localStreamRef.current) {
+      const track = localStreamRef.current.getAudioTracks()[0];
+      if (track) {
+        try {
+          if (!audioCtxRef.current) {
+            audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          const audioCtx = audioCtxRef.current;
+          const analyser = audioCtx.createAnalyser();
+          // Create a fresh stream just for the analyser to ensure it picks up the current track
+          const stream = new MediaStream([track]);
+          source = audioCtx.createMediaStreamSource(stream);
+          source.connect(analyser);
+          analyser.fftSize = 256;
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          let currentlySpeaking = false;
+          
+          const checkLevel = () => {
+            if (!micOn) return;
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            const average = sum / dataArray.length;
+            const isSpeakingNow = average > 35;
+            
+            if (isSpeakingNow !== currentlySpeaking) {
+              currentlySpeaking = isSpeakingNow;
+              const el = document.getElementById('local-video-wrapper');
+              if (el) {
+                el.style.border = isSpeakingNow ? '3px solid #1a73e8' : '3px solid transparent';
+                el.style.boxShadow = isSpeakingNow ? '0 0 15px rgba(26, 115, 232, 0.6)' : 'none';
+              }
+            }
+          };
+          checkInterval = setInterval(checkLevel, 150);
+        } catch (e) {
+          console.error("Local audio analyser failed", e);
+        }
+      }
+    }
+    
+    return () => {
+      if (checkInterval) clearInterval(checkInterval);
+      if (source) source.disconnect();
+      const el = document.getElementById('local-video-wrapper');
+      if (el) {
+        el.style.border = '3px solid transparent';
+        el.style.boxShadow = 'none';
+      }
+    };
+  }, [micOn]);
+
+  useEffect(() => {
     socketRef.current = io(); 
     const socket = socketRef.current;
 
@@ -477,51 +533,8 @@ export default function Home() {
       setMicOn(false);
       setVideoOn(false);
 
-      if (stream.getAudioTracks().length > 0) {
-        try {
-          if (!audioCtxRef.current) {
-            audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-          }
-          const audioCtx = audioCtxRef.current;
-          const analyser = audioCtx.createAnalyser();
-          const source = audioCtx.createMediaStreamSource(stream);
-          source.connect(analyser);
-          analyser.fftSize = 256;
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
-          let currentlySpeaking = false;
-          
-          const checkLevel = () => {
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-            const average = sum / dataArray.length;
-            const isSpeakingNow = average > 35; // Tuned for loud office environments
-            
-            if (isSpeakingNow) {
-              localHasSpokenRef.current = true;
-            }
-            
-            if (isSpeakingNow !== currentlySpeaking) {
-              currentlySpeaking = isSpeakingNow;
-              
-              const el = document.getElementById('local-video-wrapper');
-              if (el) {
-                el.style.border = isSpeakingNow ? '3px solid #1a73e8' : '3px solid transparent';
-                el.style.boxShadow = isSpeakingNow ? '0 0 15px rgba(26, 115, 232, 0.6)' : 'none';
-              }
-              
-              if (!isSpeakingNow) {
-                 clearTimeout(localMaxRecordTimeoutRef.current);
-                 localMaxRecordTimeoutRef.current = null;
-              }
-            }
-            setTimeout(checkLevel, 150);
-          };
-          checkLevel();
-        } catch (e) {
-          console.error("Local audio analyser failed", e);
-        }
-      }
+      // Audio VAD logic is now handled by the useEffect watching micOn
+
 
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
