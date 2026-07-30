@@ -453,7 +453,7 @@ export default function Home() {
       await new Promise(resolve => setTimeout(resolve, 800));
 
       stream.getAudioTracks().forEach(track => track.enabled = false);
-      stream.getVideoTracks().forEach(track => track.enabled = false);
+      stream.getVideoTracks().forEach(track => track.stop()); // Stop the hardware track so the camera light turns off
       setMicOn(false);
       setVideoOn(false);
 
@@ -640,14 +640,50 @@ export default function Home() {
     }
   };
 
-  const toggleMedia = (type) => {
+  const toggleMedia = async (type) => {
     if (!localStreamRef.current) return;
     const isVideo = type === 'video';
-    const track = isVideo ? localStreamRef.current.getVideoTracks()[0] : localStreamRef.current.getAudioTracks()[0];
-    if (track) {
-      track.enabled = !track.enabled;
-      if (isVideo) setVideoOn(track.enabled); else setMicOn(track.enabled);
-      socketRef.current.emit('toggle-media', { roomId, userId: socketRef.current.id, type, isEnabled: track.enabled });
+
+    if (isVideo) {
+      if (videoOn) {
+        // Turning OFF: stop the hardware track so the webcam light goes out
+        const track = localStreamRef.current.getVideoTracks()[0];
+        if (track) track.stop();
+        
+        setVideoOn(false);
+        socketRef.current.emit('toggle-media', { roomId, userId: socketRef.current.id, type, isEnabled: false });
+      } else {
+        // Turning ON: request a new hardware track and replace it in peer connections
+        try {
+          const newStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const newTrack = newStream.getVideoTracks()[0];
+          
+          const oldTrack = localStreamRef.current.getVideoTracks()[0];
+          if (oldTrack) localStreamRef.current.removeTrack(oldTrack);
+          localStreamRef.current.addTrack(newTrack);
+          
+          if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+          
+          Object.values(peerConnectionsRef.current).forEach(pc => {
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender) sender.replaceTrack(newTrack);
+          });
+          
+          setVideoOn(true);
+          socketRef.current.emit('toggle-media', { roomId, userId: socketRef.current.id, type, isEnabled: true });
+        } catch (err) {
+          console.error("Failed to restart camera", err);
+          alert("Could not access camera. Please check permissions.");
+        }
+      }
+    } else {
+      // Audio can just be disabled to avoid breaking the AudioContext and Deepgram Stream
+      const track = localStreamRef.current.getAudioTracks()[0];
+      if (track) {
+        track.enabled = !track.enabled;
+        setMicOn(track.enabled);
+        socketRef.current.emit('toggle-media', { roomId, userId: socketRef.current.id, type, isEnabled: track.enabled });
+      }
     }
   };
 
