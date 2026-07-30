@@ -1272,6 +1272,7 @@ export default function Home() {
                       value={roomId} 
                       onChange={(e) => setRoomId(e.target.value)} 
                       onKeyDown={(e) => e.key === 'Enter' && userName.trim() && startCall()}
+                      style={{width: '100%'}}
                     />
                   </div>
                   <button 
