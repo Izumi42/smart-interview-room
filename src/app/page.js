@@ -6,7 +6,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText, AudioLines, ChevronUp } from 'lucide-react';
+import { Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MessageSquare, Hand, Send, Info, Users, Settings, X, Keyboard, Video as VideoIcon, Loader2, Bot, Sparkles, CheckCircle, Circle, Plus, Trash2, Download, Copy, FileText, AudioLines, ChevronUp, Play, Square } from 'lucide-react';
 
 export default function Home() {
   const [inCall, setInCall] = useState(false);
@@ -18,9 +18,7 @@ export default function Home() {
   const [userName, setUserName] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [aiModel, setAiModel] = useState('groq');
-  const [resumeText, setResumeText] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
-  const [isAiActive, setIsAiActive] = useState(false);
+  const [interviewContext, setInterviewContext] = useState('');
   const [deepgramApiKey, setDeepgramApiKey] = useState('');
   const [nameSubmitted, setNameSubmitted] = useState(false);
   const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
@@ -41,6 +39,7 @@ export default function Home() {
   const [selectedAudioDevice, setSelectedAudioDevice] = useState('');
   const [micId, setMicId] = useState(0);
   const [showAudioMenu, setShowAudioMenu] = useState(false);
+  const [isAiActive, setIsAiActive] = useState(false);
   const [aiQuestions, setAiQuestions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [localSocketId, setLocalSocketId] = useState('');
@@ -117,11 +116,10 @@ export default function Home() {
       setAiModel(savedAiModel);
     }
     
-    const savedResume = localStorage.getItem('meet_resume');
-    if (savedResume) setResumeText(savedResume);
-    
-    const savedJd = localStorage.getItem('meet_job_description');
-    if (savedJd) setJobDescription(savedJd);
+    const savedContext = localStorage.getItem('meet_interview_context');
+    if (savedContext) {
+      setInterviewContext(savedContext);
+    }
     
     const savedDeepgramKey = localStorage.getItem('meet_deepgram_key');
     if (savedDeepgramKey) {
@@ -320,7 +318,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (inCall && micOn && isAiActive && deepgramApiKey && localStreamRef.current) {
+    if (inCall && micOn && localStreamRef.current) {
       if (recognitionRef.current) return; // Reuse the ref for MediaRecorder
 
       try {
@@ -393,11 +391,11 @@ export default function Home() {
         delete deepgramSocketsRef.current['local'];
       }
     }
-  }, [inCall, micOn, isAiActive, micId, roomId, userName, isAdmin, deepgramApiKey]);
+  }, [inCall, micOn, micId, roomId, userName, isAdmin, deepgramApiKey]);
 
   // Admin transcribes everyone else's audio since candidates don't have API keys
   useEffect(() => {
-    if (!inCall || !isAdmin || !isAiActive) {
+    if (!inCall || !isAdmin) {
       Object.values(peerRecordersRef.current).forEach(r => { 
         try { r.stop(); } catch(e){} 
       });
@@ -461,13 +459,13 @@ export default function Home() {
                 }
               } catch(e) {}
             };
+          }
             socket.onerror = (e) => {
               clearInterval(keepAliveInterval);
             };
             socket.onclose = () => {
               clearInterval(keepAliveInterval);
             };
-          }
         } catch (err) {
           console.error("Failed to start peer MediaRecorder", err);
         }
@@ -491,7 +489,7 @@ export default function Home() {
         }
       }
     });
-  }, [peers, inCall, isAdmin, isAiActive, deepgramApiKey]);
+  }, [peers, inCall, isAdmin, deepgramApiKey]);
 
   useEffect(() => {
     if (inCall && localVideoRef.current && localStreamRef.current) {
@@ -930,14 +928,7 @@ export default function Home() {
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          transcript: transcriptText, 
-          type: 'questions', 
-          agent: aiModel || localStorage.getItem('meet_ai_model') || 'groq', 
-          apiKey: apiKey || localStorage.getItem('meet_api_key'),
-          resumeText,
-          jobDescription
-        })
+        body: JSON.stringify({ transcript: transcriptText, type: 'questions', agent: aiModel || localStorage.getItem('meet_ai_model') || 'groq', apiKey: apiKey || localStorage.getItem('meet_api_key') })
       });
       const data = await res.json();
       if (data.questions) {
@@ -996,8 +987,8 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Only analyze if user is admin and there are transcripts
-    if (!isAdmin || transcripts.length === 0) return;
+    // Only analyze if user is admin, AI is active, and there are transcripts
+    if (!isAdmin || !isAiActive || transcripts.length === 0) return;
 
     const currentText = transcripts.map(t => `${t.senderName}: ${t.text}`).join('\n');
     const lastTranscript = transcripts[transcripts.length - 1];
@@ -1006,12 +997,13 @@ export default function Home() {
     if (lastTranscript && currentText !== lastAnalyzedText.current) {
       const timeout = setTimeout(() => {
         lastAnalyzedText.current = currentText;
+        generateAiQuestions(true);
         evaluateAgenda();
       }, 500); // 0.5 second pause triggers the AI
       
       return () => clearTimeout(timeout);
     }
-  }, [isAdmin, transcripts]);
+  }, [isAdmin, isAiActive, transcripts]);
 
   const toggleAgendaItem = (id) => {
     const item = agendaItems.find(i => i.id === id);
@@ -1207,7 +1199,20 @@ export default function Home() {
                   />
                 </div>
                 
-                <div style={{height: '16px'}}></div>
+                <label style={{display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px'}}>Interview Context / Keywords (Optional)</label>
+                <div className="input-wrapper" style={{marginBottom: '16px'}}>
+                  <FileText size={18} className="input-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="e.g. React, Frontend Developer, UI/UX" 
+                    value={interviewContext} 
+                    onChange={(e) => {
+                      setInterviewContext(e.target.value);
+                      localStorage.setItem('meet_interview_context', e.target.value);
+                    }} 
+                    style={{width: '100%', paddingLeft: '40px', paddingRight: '12px'}}
+                  />
+                </div>
 
                 <button onClick={() => setShowAiSettings(false)} className="btn-primary" style={{width: '100%', justifyContent: 'center'}}>
                   Save & Close
@@ -1375,62 +1380,34 @@ export default function Home() {
             {(chatOpen || participantsOpen || aiSidebarOpen || infoOpen) && (
               <div className="gm-sidebar">
                 <div className="sidebar-header">
-                  <h3>{chatOpen ? 'In-call messages' : participantsOpen ? 'People' : infoOpen ? 'Meeting details' : 'AI Co-Pilot'}</h3>
-                  <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    {aiSidebarOpen && isAiActive && (
-                      <button 
-                        onClick={() => setIsAiActive(false)}
-                        style={{background: 'rgba(234,67,53,0.1)', color: '#ea4335', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'}}
-                      >
-                        <MicOff size={12} /> Stop
-                      </button>
-                    )}
-                    <button className="close-btn" onClick={() => { setChatOpen(false); setParticipantsOpen(false); setAiSidebarOpen(false); setInfoOpen(false); }}>
+                  <h3>{chatOpen ? 'In-call messages' : participantsOpen ? 'People' : infoOpen ? 'Meeting details' : 'AI Assistant'}</h3>
+                  <button className="close-btn" onClick={() => { setChatOpen(false); setParticipantsOpen(false); setAiSidebarOpen(false); setInfoOpen(false); }}>
                     <X size={20} />
                   </button>
                 </div>
                 
                 {aiSidebarOpen && (
                   <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                    {!isAiActive ? (
-                      <div style={{flex: 1, overflowY: 'auto', background: '#f8f9fa', padding: '24px 16px', display: 'flex', flexDirection: 'column'}}>
-                        <h4 style={{margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600, color: 'var(--gm-text)'}}>Pre-Flight Setup</h4>
-                        <p style={{fontSize: '13px', color: 'var(--gm-text-muted)', marginBottom: '24px'}}>Provide context below to get hyper-personalized AI insights during the interview.</p>
-                        
-                        <label style={{display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--gm-text)', marginBottom: '8px'}}>Candidate Resume <span style={{fontWeight: 400, color: 'var(--gm-text-muted)'}}>(Optional)</span></label>
-                        <textarea 
-                          value={resumeText}
-                          onChange={(e) => {
-                            setResumeText(e.target.value);
-                            localStorage.setItem('meet_resume', e.target.value);
+                    <div style={{flex: 1, overflowY: 'auto', background: '#f8f9fa'}}>
+                      {/* AI Toggle Button */}
+                      <div style={{padding: '24px 16px 0 16px', background: 'white'}}>
+                        <button 
+                          onClick={() => setIsAiActive(!isAiActive)}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
+                            padding: '12px 24px', borderRadius: '24px', width: '100%',
+                            fontSize: '14px', fontWeight: 600, 
+                            transition: 'all 0.2s', border: 'none', cursor: 'pointer',
+                            background: isAiActive ? '#fce8e6' : 'var(--gm-primary)',
+                            color: isAiActive ? '#c5221f' : 'white',
+                            boxShadow: isAiActive ? 'none' : '0 2px 6px rgba(26,115,232,0.3)'
                           }}
-                          placeholder="Paste candidate's resume or profile..."
-                          style={{width: '100%', height: '120px', padding: '12px', borderRadius: '8px', border: '1px solid var(--gm-border)', resize: 'none', marginBottom: '20px', fontFamily: 'inherit', fontSize: '13px'}}
-                        />
-
-                        <label style={{display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--gm-text)', marginBottom: '8px'}}>Job Description <span style={{fontWeight: 400, color: 'var(--gm-text-muted)'}}>(Optional)</span></label>
-                        <textarea 
-                          value={jobDescription}
-                          onChange={(e) => {
-                            setJobDescription(e.target.value);
-                            localStorage.setItem('meet_job_description', e.target.value);
-                          }}
-                          placeholder="Paste role requirements..."
-                          style={{width: '100%', height: '120px', padding: '12px', borderRadius: '8px', border: '1px solid var(--gm-border)', resize: 'none', marginBottom: '24px', fontFamily: 'inherit', fontSize: '13px'}}
-                        />
-
-                        <div style={{marginTop: 'auto'}}>
-                          <button 
-                            onClick={() => setIsAiActive(true)}
-                            className="btn-primary" 
-                            style={{width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', borderRadius: '8px'}}
-                          >
-                            <Mic size={18} style={{marginRight: '8px'}} /> Start Listening
-                          </button>
-                        </div>
+                        >
+                          {isAiActive ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+                          {isAiActive ? 'Stop AI Auto-Analysis' : 'Start AI Auto-Analysis'}
+                        </button>
                       </div>
-                    ) : (
-                      <div style={{flex: 1, overflowY: 'auto', background: '#f8f9fa'}}>
+                      
                       <div style={{padding: '24px 16px', borderBottom: '1px solid var(--gm-border)', background: 'white'}}>
                         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px'}}>
                           <h4 style={{margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--gm-text)'}}>Smart Agenda</h4>
@@ -1475,9 +1452,6 @@ export default function Home() {
                             {isGenerating && (
                               <span style={{fontSize: '12px', color: 'var(--gm-primary)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500}}><Loader2 size={14} className="animate-spin"/> Analyzing...</span>
                             )}
-                            <button onClick={() => generateAiQuestions(true)} disabled={isGenerating || transcripts.length === 0} style={{display: 'flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid var(--gm-border)', padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 500, color: 'var(--gm-text)', cursor: isGenerating || transcripts.length === 0 ? 'not-allowed' : 'pointer', opacity: isGenerating || transcripts.length === 0 ? 0.6 : 1}}>
-                              <Bot size={14} /> Generate
-                            </button>
                             {aiQuestions && (
                               <button onClick={() => setAiQuestions('')} style={{background: 'none', border: 'none', color: 'var(--gm-text-muted)', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'}}>
                                 <Trash2 size={14} /> Clear
@@ -1489,7 +1463,7 @@ export default function Home() {
                         {!aiQuestions ? (
                           <div style={{background: 'white', border: '1px dashed var(--gm-border)', borderRadius: '8px', padding: '32px 16px', textAlign: 'center'}}>
                             <Bot size={32} color="#dadce0" style={{marginBottom: '12px'}} />
-                            <p style={{color: 'var(--gm-text-muted)', fontSize: '14px', margin: 0}}>AI is active. Click "Generate" to have the AI analyze the conversation and suggest questions.</p>
+                            <p style={{color: 'var(--gm-text-muted)', fontSize: '14px', margin: 0}}>Start listening to let the AI analyze the conversation and suggest questions.</p>
                           </div>
                         ) : (
                           <div className="ai-suggestions-box" style={{marginTop: 0}}>
@@ -1509,8 +1483,6 @@ export default function Home() {
                         )}
                       </div>
                     </div>
-                      </div>
-                    )}
                   </div>
                 )}
 
