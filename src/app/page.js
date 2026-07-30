@@ -316,6 +316,7 @@ export default function Home() {
         console.error("Failed to start MediaRecorder", err);
       }
     } else {
+      setInterimTranscript('');
       if (recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch(e){}
         recognitionRef.current = null;
