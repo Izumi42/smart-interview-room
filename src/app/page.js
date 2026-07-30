@@ -996,7 +996,6 @@ export default function Home() {
     if (lastTranscript && currentText !== lastAnalyzedText.current) {
       const timeout = setTimeout(() => {
         lastAnalyzedText.current = currentText;
-        generateAiQuestions(true);
         evaluateAgenda();
       }, 500); // 0.5 second pause triggers the AI
       
@@ -1432,6 +1431,9 @@ export default function Home() {
                             {isGenerating && (
                               <span style={{fontSize: '12px', color: 'var(--gm-primary)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500}}><Loader2 size={14} className="animate-spin"/> Analyzing...</span>
                             )}
+                            <button onClick={() => generateAiQuestions(true)} disabled={isGenerating || transcripts.length === 0} style={{display: 'flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid var(--gm-border)', padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 500, color: 'var(--gm-text)', cursor: isGenerating || transcripts.length === 0 ? 'not-allowed' : 'pointer', opacity: isGenerating || transcripts.length === 0 ? 0.6 : 1}}>
+                              <Bot size={14} /> Generate
+                            </button>
                             {aiQuestions && (
                               <button onClick={() => setAiQuestions('')} style={{background: 'none', border: 'none', color: 'var(--gm-text-muted)', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'}}>
                                 <Trash2 size={14} /> Clear
@@ -1443,7 +1445,7 @@ export default function Home() {
                         {!aiQuestions ? (
                           <div style={{background: 'white', border: '1px dashed var(--gm-border)', borderRadius: '8px', padding: '32px 16px', textAlign: 'center'}}>
                             <Bot size={32} color="#dadce0" style={{marginBottom: '12px'}} />
-                            <p style={{color: 'var(--gm-text-muted)', fontSize: '14px', margin: 0}}>Start listening to let the AI analyze the conversation and suggest questions.</p>
+                            <p style={{color: 'var(--gm-text-muted)', fontSize: '14px', margin: 0}}>Click "Generate" to have the AI analyze the conversation and suggest questions.</p>
                           </div>
                         ) : (
                           <div className="ai-suggestions-box" style={{marginTop: 0}}>
