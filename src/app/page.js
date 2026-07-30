@@ -1290,7 +1290,7 @@ export default function Home() {
                   )}
                 </div>
                 
-                <div className="input-wrapper" style={{width: '280px', height: '48px', margin: 0}}>
+                <div className="input-wrapper" style={{height: '48px', margin: 0}}>
                   <Keyboard size={20} className="input-icon" />
                   <input 
                     type="text" 
